@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tab, Member } from './types';
 import { MEMBERS } from './constants';
@@ -5,7 +6,7 @@ import { ScheduleView } from './components/ScheduleView';
 import { ExpenseView } from './components/ExpenseView';
 import { PlanningView } from './components/PlanningView';
 import { JournalView } from './components/JournalView';
-import { Calendar, DollarSign, BookOpen, ShoppingBag, Settings } from 'lucide-react';
+import { Calendar, CircleDollarSign, BookOpen, ShoppingBag, Settings } from 'lucide-react';
 import { db } from './services/firebase';
 import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
 
@@ -60,15 +61,15 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-full max-w-md mx-auto bg-[#F8FAFC] flex flex-col relative overflow-hidden font-sans">
-      {/* Reduced Header Height */}
+      {/* Header Area */}
       <header className="px-6 pt-6 pb-2 bg-transparent z-20">
         <div className="flex flex-col">
-           <h1 className="text-3xl font-bold text-sky-400 tracking-tight leading-none mb-1">Seoul Go!</h1>
+           <h1 className="text-3xl font-bold text-sky-400 tracking-tight leading-none mb-1 uppercase">Seoul Go!</h1>
            <div className="flex items-center gap-2">
-              <div className="bg-sky-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+              <div className="bg-amber-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-amber-glow">
                 時光膠囊
               </div>
-              <p className="text-[9px] text-slate-300 font-bold tracking-wider">2026.01.30 - 02.05</p>
+              <p className="text-[10px] text-slate-300 font-bold tracking-wider">2026.01.30 - 02.05</p>
            </div>
         </div>
       </header>
@@ -78,9 +79,9 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
 
-      {/* Compact Floating Bottom Navigation */}
-      <div className="px-5 pb-6 pt-1">
-        <nav className="bg-white rounded-2xl shadow-nav p-1 flex justify-between items-center z-50 border border-slate-50">
+      {/* Fixed Bottom Navigation - Updated with new style */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-6 pb-[env(safe-area-inset-bottom,24px)] pt-2 z-[60]">
+        <nav className="bg-white/95 backdrop-blur-md rounded-[32px] shadow-nav p-1 flex justify-between items-center border border-slate-100/50">
           <NavButton 
             active={activeTab === Tab.SCHEDULE} 
             onClick={() => setActiveTab(Tab.SCHEDULE)} 
@@ -90,7 +91,7 @@ const App: React.FC = () => {
           <NavButton 
             active={activeTab === Tab.EXPENSE} 
             onClick={() => setActiveTab(Tab.EXPENSE)} 
-            icon={DollarSign} 
+            icon={CircleDollarSign} 
             label="記帳" 
           />
           <NavButton 
@@ -108,7 +109,7 @@ const App: React.FC = () => {
         </nav>
       </div>
 
-      {/* Smaller Settings FAB */}
+      {/* Settings FAB */}
       <button 
         onClick={() => setIsSettingsOpen(true)}
         className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center border border-slate-100 active:scale-95 transition-all z-30"
@@ -134,7 +135,7 @@ const App: React.FC = () => {
                     type="text" 
                     value={member.name}
                     onChange={(e) => handleUpdateMemberName(member.id, e.target.value)}
-                    className="flex-1 bg-transparent border-none text-base font-bold text-slate-700 outline-none"
+                    className="flex-1 bg-transparent border-none text-base font-bold text-slate-700 outline-none font-bold"
                   />
                 </div>
               ))}
@@ -162,12 +163,12 @@ interface NavButtonProps {
 const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, label }) => (
   <button
     onClick={onClick}
-    className="flex flex-col items-center justify-center flex-1 py-1"
+    className="flex flex-col items-center justify-center flex-1 py-1 group"
   >
-    <div className={`p-1.5 rounded-xl transition-all duration-300 ${active ? 'text-sky-400 bg-sky-50' : 'text-slate-300'}`}>
-      <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+    <div className={`transition-all duration-300 flex items-center justify-center w-12 h-10 ${active ? 'text-sky-400 scale-110' : 'text-slate-300 group-active:scale-90'}`}>
+      <Icon size={26} strokeWidth={active ? 2.2 : 1.8} />
     </div>
-    <span className={`text-[9px] font-bold transition-colors duration-200 mt-0.5 ${active ? 'text-sky-400' : 'text-slate-300'}`}>
+    <span className={`text-[10px] font-bold transition-colors duration-200 mt-0.5 ${active ? 'text-sky-400' : 'text-slate-400'}`}>
       {label}
     </span>
   </button>

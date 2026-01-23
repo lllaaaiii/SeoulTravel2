@@ -1,3 +1,4 @@
+
 import { Member, EventCategory, ScheduleEvent, Expense, TodoItem } from './types';
 
 export const THEME_COLOR = '#38BDF8'; 
@@ -7,11 +8,11 @@ export const SOFT_SHADOW = '0 10px 25px -5px rgba(56, 189, 248, 0.15)';
 export const EXCHANGE_RATE = 0.024; 
 
 export const MEMBERS: Member[] = [
-  { id: 'm1', name: '我', color: 'bg-sky-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sara' },
-  { id: 'm2', name: '旅伴A', color: 'bg-amber-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lily' },
-  { id: 'm3', name: '旅伴B', color: 'bg-emerald-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mia' },
-  { id: 'm4', name: '旅伴C', color: 'bg-rose-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe' },
-  { id: 'm5', name: '旅伴D', color: 'bg-indigo-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ava' },
+  { id: 'm1', name: '我', color: 'bg-sky-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aria' },
+  { id: 'm2', name: '旅伴A', color: 'bg-rose-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bella' },
+  { id: 'm3', name: '旅伴B', color: 'bg-amber-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chloe' },
+  { id: 'm4', name: '旅伴C', color: 'bg-emerald-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Dora' },
+  { id: 'm5', name: '旅伴D', color: 'bg-indigo-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma' },
 ];
 
 export const CATEGORY_COLORS: Record<EventCategory, string> = {

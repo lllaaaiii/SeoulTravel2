@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ScheduleEvent, EventCategory, PreTripTask, Member } from '../types';
 import { CATEGORY_COLORS, CATEGORY_ICONS } from '../constants';
@@ -107,7 +108,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Super Compact Date Picker */}
       <div className="flex overflow-x-auto no-scrollbar gap-2 px-6 py-2 mb-1">
         {dates.map((d) => (
           <button
@@ -148,7 +148,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                            onChange={e => setNewTaskTitle(e.target.value)}
                            className="w-full pl-4 pr-12 py-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-sky-100 outline-none text-xs font-medium"
                         />
-                        <button type="submit" className="absolute right-1.5 top-1.5 w-8 h-8 bg-sky-400 text-white rounded-lg flex items-center justify-center">
+                        <button type="submit" className="absolute right-1.5 top-1.5 w-8 h-8 bg-sky-400 text-white rounded-lg flex items-center justify-center shadow-active">
                            <Plus size={18} />
                         </button>
                      </form>
@@ -190,20 +190,20 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
              </div>
         ) : (
         <>
-            {/* Reduced Flight Card Size */}
+            {/* 去程航班 */}
             {selectedDate === '2026-01-30' && (
               <div className="bg-white rounded-2xl border-2 border-dashed border-sky-50 p-4 shadow-soft relative overflow-hidden mb-4">
                 <div className="flex justify-between items-center mb-4">
-                  <div className="bg-sky-100 text-sky-500 text-[8px] font-bold px-2 py-0.5 rounded-full">去程</div>
-                  <div className="text-sky-400 text-[8px] font-bold tracking-widest uppercase">TPE → ICN</div>
+                  <div className="bg-amber-400 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase">出發</div>
+                  <div className="text-sky-400 text-[10px] font-bold tracking-widest uppercase">TPE → ICN</div>
                 </div>
                 <div className="flex items-center justify-between px-1 mb-2">
                   <div className="text-center">
                     <h4 className="text-2xl font-bold text-slate-700">TPE</h4>
-                    <div className="bg-slate-50 px-2 py-0.5 rounded-full text-[9px] text-slate-400 mt-1">20:00</div>
+                    <div className="bg-slate-50 px-2 py-0.5 rounded-full text-[9px] text-slate-400 mt-1 font-bold">20:00</div>
                   </div>
                   <div className="flex-1 flex flex-col items-center px-3 relative">
-                    <Plane size={14} className="text-sky-400 mb-1" />
+                    <Plane size={14} className="text-sky-400 mb-1 rotate-45" />
                     <div className="w-full h-[1px] bg-sky-100 flex items-center justify-between">
                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -ml-0.5"></div>
                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -mr-0.5"></div>
@@ -212,7 +212,35 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                   </div>
                   <div className="text-center">
                     <h4 className="text-2xl font-bold text-slate-700">ICN</h4>
-                    <div className="bg-slate-50 px-2 py-0.5 rounded-full text-[9px] text-slate-400 mt-1">23:30</div>
+                    <div className="bg-slate-50 px-2 py-0.5 rounded-full text-[9px] text-slate-400 mt-1 font-bold">23:30</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 回程航班 */}
+            {selectedDate === '2026-02-05' && (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-sky-50 p-4 shadow-soft relative overflow-hidden mb-4">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="bg-amber-400 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase">抵達</div>
+                  <div className="text-sky-400 text-[10px] font-bold tracking-widest uppercase">ICN → TPE</div>
+                </div>
+                <div className="flex items-center justify-between px-1 mb-2">
+                  <div className="text-center">
+                    <h4 className="text-2xl font-bold text-slate-700">ICN</h4>
+                    <div className="bg-slate-50 px-2 py-0.5 rounded-full text-[9px] text-slate-400 mt-1 font-bold">16:20</div>
+                  </div>
+                  <div className="flex-1 flex flex-col items-center px-3 relative">
+                    <Plane size={14} className="text-sky-400 mb-1 rotate-90" />
+                    <div className="w-full h-[1px] bg-sky-100 flex items-center justify-between">
+                       <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -ml-0.5"></div>
+                       <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -mr-0.5"></div>
+                    </div>
+                    <span className="text-[8px] text-slate-300 mt-1 font-bold tracking-wider">KE 2027</span>
+                  </div>
+                  <div className="text-center">
+                    <h4 className="text-2xl font-bold text-slate-700">TPE</h4>
+                    <div className="bg-slate-50 px-2 py-0.5 rounded-full text-[9px] text-slate-400 mt-1 font-bold">18:10</div>
                   </div>
                 </div>
               </div>
@@ -220,7 +248,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
 
             <button 
                 onClick={() => { setEditingId(null); setNewLocation(''); setNewNotes(''); setIsModalOpen(true); }}
-                className="w-full bg-amber-400 hover:bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-lg flex items-center justify-center space-x-2 active:scale-[0.98] transition-all mb-4"
+                className="w-full bg-amber-400 hover:bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-amber-glow flex items-center justify-center space-x-2 active:scale-[0.98] transition-all mb-4"
             >
               <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
                 <Plus size={14} strokeWidth={3} />
@@ -241,12 +269,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                         </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
-                          className="text-slate-200 hover:text-rose-400 transition-colors p-1"
+                          className="text-slate-100 hover:text-rose-400 transition-colors p-1"
                         >
                             <Trash2 size={14} />
                         </button>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-700 mb-1">{event.location}</h3>
+                    <h3 className="text-lg font-bold text-slate-700 mb-1 leading-tight">{event.location}</h3>
                     {event.notes && <p className="text-xs text-slate-400 italic font-medium truncate">{event.notes}</p>}
                 </div>
             ))}
@@ -273,7 +301,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                         </button>
                     ))}
                  </div>
-                 <textarea placeholder="寫點備註..." value={newNotes} onChange={e => setNewNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl h-20 outline-none focus:ring-2 focus:ring-sky-100 text-xs" />
+                 <textarea placeholder="寫點備註..." value={newNotes} onChange={e => setNewNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl h-20 outline-none focus:ring-2 focus:ring-sky-100 text-xs font-bold" />
                  <div className="flex gap-3 pt-2">
                      {editingId && (
                          <button type="button" onClick={() => handleDeleteEvent()} className="px-4 py-4 bg-rose-50 text-rose-500 font-bold rounded-xl active:scale-95 transition-all">
