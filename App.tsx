@@ -60,18 +60,32 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-full max-w-md mx-auto bg-[#F8FAFC] flex flex-col relative overflow-hidden font-sans">
-      {/* Header Area */}
-      <header className="px-6 pt-6 pb-2 bg-transparent z-20">
-        <div className="flex flex-col">
-           <h1 className="text-3xl font-bold text-sky-400 tracking-tight leading-none mb-1 uppercase">Seoul Go!</h1>
+    <div className="h-screen w-full max-w-md mx-auto bg-[#FCFBF7] flex flex-col relative overflow-hidden font-sans">
+      {/* Header Area - we.png in the middle */}
+      <header className="px-6 pt-10 pb-4 bg-transparent z-20 flex items-center justify-between gap-3">
+        <div className="flex flex-col flex-1">
+           <h1 className="text-xl font-black text-sky-400 tracking-tight leading-none mb-1 uppercase">Seoul Go!</h1>
            <div className="flex items-center gap-2">
-              <div className="bg-amber-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-amber-glow">
+              {/* 修改點：由黃底藍字變更為藍底黃字 (bg-sky-400 text-brand-100) */}
+              <div className="bg-sky-400 text-brand-100 border border-sky-500/20 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                 時光膠囊
               </div>
-              <p className="text-[10px] text-slate-300 font-bold tracking-wider">2026.01.30 - 02.05</p>
+              <p className="text-[9px] text-slate-300 font-bold tracking-widest">2026.01.30-02.05</p>
            </div>
         </div>
+        
+        {/* we.png in the middle */}
+        <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-soft border border-white shrink-0">
+          <img src="we.png" alt="Travelers" className="w-full h-full object-cover" />
+        </div>
+
+        {/* Settings Button */}
+        <button 
+          onClick={() => setIsSettingsOpen(true)}
+          className="w-10 h-10 rounded-xl bg-white shadow-soft flex items-center justify-center border border-slate-50 active:scale-95 transition-all shrink-0"
+        >
+           <Settings size={20} className="text-slate-300" />
+        </button>
       </header>
 
       {/* Main Content Area */}
@@ -79,9 +93,9 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
 
-      {/* Fixed Bottom Navigation - Updated with new style */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-6 pb-[env(safe-area-inset-bottom,24px)] pt-2 z-[60]">
-        <nav className="bg-white/95 backdrop-blur-md rounded-[32px] shadow-nav p-1 flex justify-between items-center border border-slate-100/50">
+      {/* Fixed Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-6 pb-[env(safe-area-inset-bottom,16px)] pt-2 z-[60]">
+        <nav className="bg-white/90 backdrop-blur-md rounded-[24px] shadow-nav p-0.5 flex justify-between items-center border border-slate-100/50">
           <NavButton 
             active={activeTab === Tab.SCHEDULE} 
             onClick={() => setActiveTab(Tab.SCHEDULE)} 
@@ -109,21 +123,13 @@ const App: React.FC = () => {
         </nav>
       </div>
 
-      {/* Settings FAB */}
-      <button 
-        onClick={() => setIsSettingsOpen(true)}
-        className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center border border-slate-100 active:scale-95 transition-all z-30"
-      >
-         <Settings size={18} className="text-slate-300" />
-      </button>
-
       {/* Settings Modal */}
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-end justify-center">
-          <div className="bg-white rounded-t-3xl p-6 w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-10">
+          <div className="bg-white rounded-t-[32px] p-6 w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-10">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-800">旅伴設定</h2>
-              <button onClick={() => setIsSettingsOpen(false)} className="text-slate-300 p-1">✕</button>
+              <button onClick={() => setIsSettingsOpen(false)} className="text-slate-300 p-1 text-xl">✕</button>
             </div>
             <div className="space-y-3 mb-8">
               {members.map(member => (
@@ -135,7 +141,7 @@ const App: React.FC = () => {
                     type="text" 
                     value={member.name}
                     onChange={(e) => handleUpdateMemberName(member.id, e.target.value)}
-                    className="flex-1 bg-transparent border-none text-base font-bold text-slate-700 outline-none font-bold"
+                    className="flex-1 bg-transparent border-none text-base font-bold text-slate-700 outline-none"
                   />
                 </div>
               ))}
@@ -165,8 +171,8 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
     onClick={onClick}
     className="flex flex-col items-center justify-center flex-1 py-1 group"
   >
-    <div className={`transition-all duration-300 flex items-center justify-center w-12 h-10 ${active ? 'text-sky-400 scale-110' : 'text-slate-300 group-active:scale-90'}`}>
-      <Icon size={26} strokeWidth={active ? 2.2 : 1.8} />
+    <div className={`transition-all duration-300 flex items-center justify-center w-8 h-8 ${active ? 'text-sky-400 scale-110' : 'text-slate-300 group-active:scale-90'}`}>
+      <Icon size={20} strokeWidth={active ? 2.5 : 2} />
     </div>
     <span className={`text-[10px] font-bold transition-colors duration-200 mt-0.5 ${active ? 'text-sky-400' : 'text-slate-400'}`}>
       {label}

@@ -121,42 +121,42 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
           >
             {d.val === 'PRE_TRIP' ? (
               <>
-                <span className="text-[7px] font-bold text-slate-400 mb-0.5">PRE</span>
-                <span className="text-base">📝</span>
+                <span className="text-[7px] font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">TASK</span>
+                <span className="text-base leading-none text-sky-400">📝</span>
               </>
             ) : (
               <>
                 <span className="text-[7px] font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">DAY</span>
-                <span className={`text-base font-bold mb-0.5 ${selectedDate === d.val ? 'text-sky-500' : 'text-slate-300'}`}>{d.display}</span>
-                <span className="text-[7px] font-bold">{d.date}</span>
+                <span className={`text-base font-bold leading-tight ${selectedDate === d.val ? 'text-sky-400' : 'text-slate-300'}`}>{d.display}</span>
+                <span className="text-[7px] font-bold leading-none">{d.date}</span>
               </>
             )}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-24 space-y-4 no-scrollbar">
+      <div className="flex-1 overflow-y-auto px-6 pb-24 space-y-4 no-scrollbar pt-2">
         {selectedDate === 'PRE_TRIP' ? (
              <div className="space-y-3">
-                 <div className="bg-white p-4 rounded-3xl shadow-soft border border-slate-50">
-                     <h3 className="text-lg font-bold text-slate-800 mb-4">行前準備</h3>
+                 <div className="bg-white p-5 rounded-3xl shadow-soft border border-slate-50">
+                     <h3 className="text-base font-bold text-slate-800 mb-4">行前準備</h3>
                      <form onSubmit={handleAddPreTripTask} className="relative mb-4">
                         <input 
                            type="text" 
-                           placeholder="新增準備事項..." 
+                           placeholder="準備事項..." 
                            value={newTaskTitle}
                            onChange={e => setNewTaskTitle(e.target.value)}
-                           className="w-full pl-4 pr-12 py-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-sky-100 outline-none text-xs font-medium"
+                           className="w-full pl-4 pr-12 py-3 rounded-xl bg-slate-50 border-none outline-none text-xs font-bold"
                         />
                         <button type="submit" className="absolute right-1.5 top-1.5 w-8 h-8 bg-sky-400 text-white rounded-lg flex items-center justify-center shadow-active">
                            <Plus size={18} />
                         </button>
                      </form>
-                     <div className="space-y-3">
+                     <div className="space-y-2">
                         {preTripTasks.map(task => (
-                            <div key={task.id} className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+                            <div key={task.id} className="bg-white rounded-xl border border-slate-100 p-3 shadow-xs">
                                 <div className="flex justify-between items-center mb-3">
-                                    <span className="font-bold text-slate-700 text-sm">{task.title}</span>
+                                    <span className="font-bold text-slate-700 text-xs">{task.title}</span>
                                     <button onClick={() => deletePreTripTask(task.id)} className="text-slate-200 p-1 hover:text-rose-400 transition-colors">
                                       <Trash2 size={14} />
                                     </button>
@@ -173,12 +173,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                                                 <div className={`w-8 h-8 rounded-full border-2 overflow-hidden relative transition-all ${isDone ? 'border-sky-400 ring-2 ring-sky-50' : 'border-slate-100 grayscale opacity-40'}`}>
                                                     <img src={member.avatar} className="w-full h-full object-cover" alt={member.name}/>
                                                     {isDone && (
-                                                        <div className="absolute inset-0 bg-sky-400/30 flex items-center justify-center">
+                                                        <div className="absolute inset-0 bg-sky-400/30 flex items-center justify-center rounded-full">
                                                             <Check size={14} className="text-white drop-shadow-md" strokeWidth={4} />
                                                         </div>
                                                     )}
                                                 </div>
-                                                <span className={`text-[8px] font-bold truncate w-full text-center ${isDone ? 'text-sky-500' : 'text-slate-300'}`}>{member.name}</span>
+                                                <span className={`text-[8px] font-bold truncate w-full text-center ${isDone ? 'text-sky-400' : 'text-slate-300'}`}>{member.name}</span>
                                             </button>
                                         );
                                     })}
@@ -192,9 +192,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
         <>
             {/* 去程航班 */}
             {selectedDate === '2026-01-30' && (
-              <div className="bg-white rounded-2xl border-2 border-dashed border-sky-50 p-4 shadow-soft relative overflow-hidden mb-4">
+              <div className="bg-white rounded-[24px] border-2 border-dashed border-sky-400/20 p-4 shadow-soft relative overflow-hidden mb-4">
                 <div className="flex justify-between items-center mb-4">
-                  <div className="bg-amber-400 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase">出發</div>
+                  {/* 修改點：改為藍底黃字樣式 (bg-sky-400 text-brand-100) */}
+                  <div className="bg-sky-400 text-brand-100 border border-sky-500/30 text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-tighter">出發</div>
                   <div className="text-sky-400 text-[10px] font-bold tracking-widest uppercase">TPE → ICN</div>
                 </div>
                 <div className="flex items-center justify-between px-1 mb-2">
@@ -208,7 +209,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -ml-0.5"></div>
                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -mr-0.5"></div>
                     </div>
-                    <span className="text-[8px] text-slate-300 mt-1 font-bold tracking-wider">IT 602</span>
+                    <span className="text-[8px] text-slate-300 mt-1 font-bold tracking-wider uppercase">IT 602</span>
                   </div>
                   <div className="text-center">
                     <h4 className="text-2xl font-bold text-slate-700">ICN</h4>
@@ -220,9 +221,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
 
             {/* 回程航班 */}
             {selectedDate === '2026-02-05' && (
-              <div className="bg-white rounded-2xl border-2 border-dashed border-sky-50 p-4 shadow-soft relative overflow-hidden mb-4">
+              <div className="bg-white rounded-[24px] border-2 border-dashed border-sky-400/20 p-4 shadow-soft relative overflow-hidden mb-4">
                 <div className="flex justify-between items-center mb-4">
-                  <div className="bg-amber-400 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase">抵達</div>
+                  {/* 修改點：改為藍底黃字樣式 (bg-sky-400 text-brand-100) */}
+                  <div className="bg-sky-400 text-brand-100 border border-sky-500/30 text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-tighter">抵達</div>
                   <div className="text-sky-400 text-[10px] font-bold tracking-widest uppercase">ICN → TPE</div>
                 </div>
                 <div className="flex items-center justify-between px-1 mb-2">
@@ -236,7 +238,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -ml-0.5"></div>
                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -mr-0.5"></div>
                     </div>
-                    <span className="text-[8px] text-slate-300 mt-1 font-bold tracking-wider">KE 2027</span>
+                    <span className="text-[8px] text-slate-300 mt-1 font-bold tracking-wider uppercase">KE 2027</span>
                   </div>
                   <div className="text-center">
                     <h4 className="text-2xl font-bold text-slate-700">TPE</h4>
@@ -246,14 +248,15 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
               </div>
             )}
 
+            {/* 修改點：將「新增行程」按鈕由黃底藍字改為藍底黃字樣式 (bg-sky-400 text-brand-100) */}
             <button 
                 onClick={() => { setEditingId(null); setNewLocation(''); setNewNotes(''); setIsModalOpen(true); }}
-                className="w-full bg-amber-400 hover:bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-amber-glow flex items-center justify-center space-x-2 active:scale-[0.98] transition-all mb-4"
+                className="w-full bg-sky-400 text-brand-100 font-black py-4 rounded-2xl shadow-active flex items-center justify-center space-x-2 active:scale-[0.98] transition-all mb-4 border border-sky-500/20"
             >
-              <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
-                <Plus size={14} strokeWidth={3} />
+              <div className="w-5 h-5 rounded-full bg-brand-100 flex items-center justify-center shadow-soft">
+                <Plus size={14} strokeWidth={4} className="text-sky-400" />
               </div>
-              <span className="text-base">新增一個行程</span>
+              <span className="text-sm tracking-tight uppercase">新增行程</span>
             </button>
 
             <div className="space-y-3">
@@ -261,10 +264,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                 <div 
                     key={event.id}
                     onClick={() => { setEditingId(event.id); setNewLocation(event.location); setNewCategory(event.category); setNewNotes(event.notes || ''); setIsModalOpen(true); }}
-                    className="bg-white rounded-2xl p-4 shadow-soft border border-slate-50 active:scale-[0.98] transition-all relative group"
+                    className="bg-white rounded-[20px] p-4 shadow-soft border border-slate-50 active:scale-[0.98] transition-all relative group"
                 >
                     <div className="flex justify-between items-start mb-2">
-                        <div className={`px-3 py-0.5 rounded-xl text-[9px] font-bold border ${CATEGORY_COLORS[event.category]}`}>
+                        <div className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${CATEGORY_COLORS[event.category].replace('text-sky-500', 'text-sky-400')}`}>
                             {CATEGORY_ICONS[event.category]} {event.category}
                         </div>
                         <button 
@@ -274,25 +277,28 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                             <Trash2 size={14} />
                         </button>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-700 mb-1 leading-tight">{event.location}</h3>
-                    {event.notes && <p className="text-xs text-slate-400 italic font-medium truncate">{event.notes}</p>}
+                    <h3 className="text-base font-bold text-slate-700 mb-1 leading-snug">{event.location}</h3>
+                    {event.notes && <p className="text-[11px] text-slate-400 italic font-medium truncate">{event.notes}</p>}
                 </div>
             ))}
+            {filteredEvents.length === 0 && selectedDate !== 'PRE_TRIP' && (
+              <div className="text-center py-12 text-slate-200 text-xs font-bold uppercase tracking-widest italic">No events planned</div>
+            )}
             </div>
         </>
         )}
       </div>
 
       {isModalOpen && selectedDate !== 'PRE_TRIP' && (
-        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-end justify-center">
-           <div className="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10">
+        <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm flex items-end justify-center">
+           <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-slate-800">{editingId ? '編輯行程' : '新增行程'}</h2>
+                <h2 className="text-lg font-bold text-slate-800">{editingId ? '編輯行程' : '新增行程'}</h2>
                 <button onClick={() => setIsModalOpen(false)} className="text-slate-300 text-xl">✕</button>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                  <div>
-                    <input type="text" placeholder="去哪裡？" value={newLocation} onChange={e => setNewLocation(e.target.value)} className="w-full text-lg font-bold py-3 border-b-2 border-slate-100 focus:border-sky-400 outline-none transition-colors" required />
+                    <input type="text" placeholder="目的地名稱" value={newLocation} onChange={e => setNewLocation(e.target.value)} className="w-full text-lg font-bold py-3 border-b-2 border-slate-50 focus:border-sky-400 outline-none transition-colors" required />
                  </div>
                  <div className="grid grid-cols-3 gap-2">
                     {Object.values(EventCategory).map(cat => (
@@ -301,14 +307,14 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                         </button>
                     ))}
                  </div>
-                 <textarea placeholder="寫點備註..." value={newNotes} onChange={e => setNewNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl h-20 outline-none focus:ring-2 focus:ring-sky-100 text-xs font-bold" />
-                 <div className="flex gap-3 pt-2">
+                 <textarea placeholder="有些備註想記錄嗎？" value={newNotes} onChange={e => setNewNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl h-24 outline-none focus:ring-1 focus:ring-sky-200 text-xs font-bold text-slate-600" />
+                 <div className="flex gap-3 pt-4">
                      {editingId && (
-                         <button type="button" onClick={() => handleDeleteEvent()} className="px-4 py-4 bg-rose-50 text-rose-500 font-bold rounded-xl active:scale-95 transition-all">
+                         <button type="button" onClick={() => handleDeleteEvent()} className="px-5 py-4 bg-rose-50 text-rose-500 font-bold rounded-2xl active:scale-95 transition-all">
                              <Trash2 size={20} />
                          </button>
                      )}
-                     <button type="submit" className="flex-1 py-4 bg-sky-400 text-white text-base font-bold rounded-xl shadow-active active:scale-95 transition-all">
+                     <button type="submit" className="flex-1 py-4 bg-sky-400 text-white text-base font-bold rounded-2xl shadow-active active:scale-95 transition-all">
                         {editingId ? '儲存變更' : '確定新增'}
                      </button>
                  </div>
