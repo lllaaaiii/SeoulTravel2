@@ -196,35 +196,35 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-6 pb-24 pt-4 space-y-5 no-scrollbar">
-            {/* 匯率設定卡片 - 修正溢出問題 */}
+            {/* 匯率設定卡片 - 改進佈局解決溢出 */}
             <div className="bg-sky-50 rounded-2xl p-5 border border-sky-100 shadow-soft">
-                <div className="flex justify-between items-center mb-4">
-                   <h4 className="text-sky-500 text-[11px] font-black tracking-tight uppercase">匯率設定</h4>
+                <div className="flex justify-between items-center mb-4 gap-2">
+                   <h4 className="text-sky-500 text-[10px] font-black tracking-tight uppercase shrink-0">匯率設定</h4>
                    <a 
                      href="https://rate.bot.com.tw/xrt?Lang=zh-TW" 
                      target="_blank" 
                      rel="noopener noreferrer"
-                     className="bg-white text-sky-400 text-[9px] font-bold px-3 py-1.5 rounded-lg border border-sky-400/20 shadow-sm flex items-center gap-1 active:scale-95 transition-all"
+                     className="bg-white text-sky-400 text-[8px] font-black px-2 py-1.5 rounded-lg border border-sky-400/20 shadow-sm flex items-center gap-1 active:scale-95 transition-all whitespace-nowrap overflow-hidden"
                    >
-                      <Landmark size={10} /> 臺銀牌告匯率 <ExternalLink size={10} />
+                      <Landmark size={10} /> 臺銀牌告 <ExternalLink size={8} />
                    </a>
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                   <div className="text-slate-600 text-[11px] font-black leading-none uppercase shrink-0">1 KRW ≈</div>
-                   <div className="flex-1 min-w-0 bg-white border border-sky-400/20 rounded-xl px-2 sm:px-4 h-12 flex items-center shadow-sm">
+                <div className="flex items-center gap-2">
+                   <div className="text-slate-600 text-[10px] font-black leading-none uppercase shrink-0">1 KRW ≈</div>
+                   <div className="flex-1 min-w-0 bg-white border border-sky-400/20 rounded-xl px-2 h-12 flex items-center shadow-sm">
                       <input 
                          type="number" 
                          step="0.0001"
                          value={exchangeRate} 
                          onChange={(e) => handleRateChange(e.target.value)}
-                         className="w-full text-center text-sky-500 text-lg sm:text-xl font-black bg-transparent outline-none"
+                         className="w-full text-center text-sky-500 text-lg font-black bg-transparent outline-none"
                       />
                    </div>
-                   <div className="text-slate-600 text-[11px] font-black leading-none uppercase shrink-0">TWD</div>
+                   <div className="text-slate-600 text-[10px] font-black leading-none uppercase shrink-0">TWD</div>
                 </div>
             </div>
 
-            {/* 統一結算報表 - 縮短間距 */}
+            {/* 統一結算報表 */}
             <div>
                 <h3 className="text-slate-600 text-sm font-bold mb-3 px-1">統一結算報表 (TWD)</h3>
                 <div className="bg-white rounded-2xl shadow-soft border border-slate-50 overflow-hidden">
@@ -258,7 +258,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                 </div>
             </div>
 
-            {/* 個人總額統計 - 點擊功能修復 */}
+            {/* 個人總額統計 */}
             <div>
                 <h3 className="text-slate-600 text-sm font-bold mb-3 px-1">個人分攤統計</h3>
                 <div className="space-y-2">
@@ -294,7 +294,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
               <button onClick={() => setDetailMemberId(null)} className="text-slate-300 p-2 text-xl active:scale-90">✕</button>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-6">
+            <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-6 px-1">
                {getMemberExpenses(detailMemberId).map(exp => (
                  <div key={exp.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
                     <div className="flex items-center gap-3">

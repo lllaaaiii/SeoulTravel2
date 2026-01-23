@@ -1,37 +1,45 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Tab, Member } from './types';
 import { MEMBERS } from './constants';
 import { ScheduleView } from './components/ScheduleView';
 import { ExpenseView } from './components/ExpenseView';
 import { PlanningView } from './components/PlanningView';
 import { JournalView } from './components/JournalView';
-import { Calendar, CircleDollarSign, BookOpen, ShoppingBag, Settings, User, Image as ImageIcon } from 'lucide-react';
+import { Calendar, CircleDollarSign, BookOpen, ShoppingBag, Settings, Image as ImageIcon, Camera } from 'lucide-react';
 import { db } from './services/firebase';
-import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.SCHEDULE);
   const [members, setMembers] = useState<Member[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'members'), (snapshot) => {
+    // 監聽成員資料
+    const unsubscribeMembers = onSnapshot(collection(db, 'members'), (snapshot) => {
       const fetchedMembers: Member[] = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Member));
-      
       fetchedMembers.sort((a, b) => a.id.localeCompare(b.id));
+      if (fetchedMembers.length > 0) setMembers(fetchedMembers);
+      else seedMembers();
+    });
 
-      if (fetchedMembers.length > 0) {
-        setMembers(fetchedMembers);
-      } else {
-        seedMembers();
+    // 監聽封面照片
+    const unsubscribeConfig = onSnapshot(doc(db, 'config', 'settings'), (snapshot) => {
+      if (snapshot.exists()) {
+        setCoverImage(snapshot.data().coverImage || null);
       }
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeMembers();
+      unsubscribeConfig();
+    };
   }, []);
 
   const seedMembers = async () => {
@@ -42,6 +50,24 @@ const App: React.FC = () => {
 
   const handleUpdateMemberName = async (id: string, newName: string) => {
     await updateDoc(doc(db, 'members', id), { name: newName });
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      setCoverImage(base64String);
+      // 儲存到 Firebase
+      await setDoc(doc(db, 'config', 'settings'), { coverImage: base64String }, { merge: true });
+    };
+    reader.readAsDataURL(file);
   };
 
   const renderContent = () => {
@@ -74,23 +100,34 @@ const App: React.FC = () => {
            </div>
         </div>
         
-        {/* we.png 優化顯示：如果檔案存在於根目錄且名稱為 we.png 則會顯示 */}
-        <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-soft border-2 border-white shrink-0 bg-sky-50 flex items-center justify-center relative group">
-          {!imageError ? (
+        {/* Cover Image Container - Click to change */}
+        <div 
+          onClick={handleImageClick}
+          className="w-14 h-14 rounded-2xl overflow-hidden shadow-soft border-2 border-white shrink-0 bg-sky-50 flex items-center justify-center relative active:scale-95 transition-all cursor-pointer group"
+        >
+          {coverImage ? (
             <img 
-              src="we.png" 
-              alt="Travelers" 
+              src={coverImage} 
+              alt="Cover" 
               className="w-full h-full object-cover relative z-10" 
-              onError={() => setImageError(true)}
             />
           ) : (
             <div className="flex flex-col items-center justify-center gap-0.5">
                <ImageIcon className="text-sky-200" size={20} />
-               <span className="text-[7px] font-bold text-sky-200 uppercase">we.png</span>
+               <span className="text-[6px] font-black text-sky-200 uppercase leading-none">Set Photo</span>
             </div>
           )}
-          {/* 裝飾線條 */}
-          <div className="absolute top-0 right-0 w-3 h-3 bg-brand-100/30 rounded-bl-lg"></div>
+          {/* Hover Overlay */}
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 z-20 flex items-center justify-center transition-opacity">
+            <Camera size={16} className="text-white" />
+          </div>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept="image/*" 
+            className="hidden" 
+          />
         </div>
 
         {/* Settings Button */}
