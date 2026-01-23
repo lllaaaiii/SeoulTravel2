@@ -135,42 +135,42 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
 
   return (
     <div className="h-full flex flex-col no-scrollbar">
-      <div className="px-8 pt-6">
-        <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 flex shadow-sm">
-            <button onClick={() => setActiveSubTab('list')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${activeSubTab === 'list' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>支出明細</button>
-            <button onClick={() => setActiveSubTab('settle')} className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${activeSubTab === 'settle' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>結算 & 統計</button>
+      <div className="px-6 pt-4">
+        <div className="bg-slate-50 p-1 rounded-xl border border-slate-100 flex shadow-sm">
+            <button onClick={() => setActiveSubTab('list')} className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition-all ${activeSubTab === 'list' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>支出明細</button>
+            <button onClick={() => setActiveSubTab('settle')} className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition-all ${activeSubTab === 'settle' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400'}`}>結算 & 統計</button>
         </div>
       </div>
 
       {activeSubTab === 'list' ? (
-        <div className="flex-1 overflow-y-auto px-8 pb-32 space-y-8 pt-6 no-scrollbar">
+        <div className="flex-1 overflow-y-auto px-6 pb-24 space-y-6 pt-4 no-scrollbar">
             <div className="flex justify-between items-center">
-               <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Timeline</h3>
-               <button onClick={openAddModal} className="bg-sky-400 text-white p-3 rounded-2xl shadow-active active:scale-90 transition-transform"><Plus size={20} /></button>
+               <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Timeline</h3>
+               <button onClick={openAddModal} className="bg-sky-400 text-white p-2.5 rounded-xl shadow-active active:scale-90 transition-transform"><Plus size={18} /></button>
             </div>
             {sortedDates.map(date => (
-                <div key={date} className="space-y-4">
-                    <div className="text-[10px] font-bold text-sky-400/60 flex items-center gap-2 mb-2"><Calendar size={12}/> {date}</div>
-                    <div className="space-y-4">
+                <div key={date} className="space-y-3">
+                    <div className="text-[9px] font-bold text-sky-400/60 flex items-center gap-1.5 mb-1"><Calendar size={10}/> {date}</div>
+                    <div className="space-y-3">
                     {expensesByDate[date].map(exp => {
                     const payerM = members.find(m => m.id === exp.payerId);
                     return (
-                        <div key={exp.id} onClick={() => openEditModal(exp)} className="bg-white py-6 px-6 rounded-[2.5rem] shadow-soft border border-slate-50 flex justify-between items-center cursor-pointer active:scale-[0.98] transition-all">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-slate-50 border border-slate-100 shadow-inner">{(CATEGORY_ICONS as any)[exp.category] || '💸'}</div>
+                        <div key={exp.id} onClick={() => openEditModal(exp)} className="bg-white py-4 px-4 rounded-2xl shadow-soft border border-slate-50 flex justify-between items-center cursor-pointer active:scale-[0.98] transition-all">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-slate-50 border border-slate-100">{(CATEGORY_ICONS as any)[exp.category] || '💸'}</div>
                             <div>
-                              <div className="text-lg font-bold text-slate-700 leading-tight mb-1">{exp.description}</div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-slate-400">By <span className="text-sky-500">{payerM?.name}</span></span>
-                                <div className="flex -space-x-3 ml-2">
-                                  {exp.splitWithIds.map(id => <img key={id} src={members.find(m => m.id === id)?.avatar} className="w-7 h-7 rounded-full border-2 border-white bg-slate-50 shadow-sm" />)}
+                              <div className="text-base font-bold text-slate-700 leading-tight mb-0.5">{exp.description}</div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-bold text-slate-400">By <span className="text-sky-500">{payerM?.name}</span></span>
+                                <div className="flex -space-x-2 ml-1">
+                                  {exp.splitWithIds.map(id => <img key={id} src={members.find(m => m.id === id)?.avatar} className="w-5 h-5 rounded-full border border-white bg-slate-50 shadow-xs" />)}
                                 </div>
                               </div>
                             </div>
                         </div>
                         <div className="text-right shrink-0">
-                            <div className="text-xl font-black text-slate-800">₩{exp.amountKRW.toLocaleString()}</div>
-                            <div className="text-[11px] font-bold text-slate-300 uppercase tracking-tight">NT$ {exp.amountTWD.toLocaleString()}</div>
+                            <div className="text-base font-black text-slate-800">₩{exp.amountKRW.toLocaleString()}</div>
+                            <div className="text-[9px] font-bold text-slate-300 uppercase tracking-tight">NT$ {exp.amountTWD.toLocaleString()}</div>
                         </div>
                         </div>
                     );
@@ -180,34 +180,34 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
             ))}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-8 pb-32 pt-8 space-y-8 no-scrollbar">
+        <div className="flex-1 overflow-y-auto px-6 pb-24 pt-6 space-y-6 no-scrollbar">
             <div>
-                <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-4">Settlement (TWD)</h3>
-                <div className="space-y-3">
+                <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-3">Settlement (TWD)</h3>
+                <div className="space-y-2.5">
                     {settlement.transactions.map((t, idx) => {
                         const from = members.find(m => m.id === t.from), to = members.find(m => m.id === t.to);
                         return (
-                            <div key={idx} className="bg-white p-5 rounded-[2.5rem] shadow-soft border border-slate-50 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex -space-x-3"><img src={from?.avatar} className="w-10 h-10 rounded-full border-2 border-white"/><img src={to?.avatar} className="w-10 h-10 rounded-full border-2 border-white"/></div>
+                            <div key={idx} className="bg-white p-4 rounded-2xl shadow-soft border border-slate-50 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex -space-x-2.5"><img src={from?.avatar} className="w-8 h-8 rounded-full border-2 border-white"/><img src={to?.avatar} className="w-8 h-8 rounded-full border-2 border-white"/></div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-black text-sky-500 text-lg">NT$ {t.amount.toLocaleString()}</div>
-                                    <div className="text-[10px] font-bold text-slate-300">{from?.name} ➔ {to?.name}</div>
+                                    <div className="font-black text-sky-500 text-base">NT$ {t.amount.toLocaleString()}</div>
+                                    <div className="text-[9px] font-bold text-slate-300">{from?.name} ➔ {to?.name}</div>
                                 </div>
                             </div>
                         )
                     })}
-                    {settlement.transactions.length === 0 && <div className="text-center text-slate-200 py-10 bg-white rounded-[2rem] border-2 border-dashed border-slate-50">無需轉帳</div>}
+                    {settlement.transactions.length === 0 && <div className="text-center text-slate-200 py-8 bg-white rounded-2xl border-2 border-dashed border-slate-50 text-xs">無需轉帳</div>}
                 </div>
             </div>
             <div>
-                <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-4">Total Shares</h3>
-                <div className="space-y-4">
+                <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-3">Total Shares</h3>
+                <div className="space-y-2.5">
                     {members.map(m => (
-                        <div key={m.id} onClick={() => setDetailMemberId(m.id)} className="bg-white p-5 rounded-[2rem] shadow-soft border border-slate-50 flex items-center justify-between cursor-pointer active:scale-95">
-                            <div className="flex items-center gap-4"><img src={m.avatar} className="w-12 h-12 rounded-full border-4 border-white shadow-sm"/><div className="text-lg font-bold text-slate-700">{m.name}</div></div>
-                            <div className="flex items-center gap-3"><div className="text-xl font-black text-sky-500">NT$ {Math.round(settlement.shareTotals[m.id]).toLocaleString()}</div><ChevronRight className="text-slate-100" size={24}/></div>
+                        <div key={m.id} onClick={() => setDetailMemberId(m.id)} className="bg-white p-4 rounded-2xl shadow-soft border border-slate-50 flex items-center justify-between cursor-pointer active:scale-95">
+                            <div className="flex items-center gap-3"><img src={m.avatar} className="w-10 h-10 rounded-full border-2 border-white shadow-xs"/><div className="text-base font-bold text-slate-700">{m.name}</div></div>
+                            <div className="flex items-center gap-2"><div className="text-lg font-black text-sky-500">NT$ {Math.round(settlement.shareTotals[m.id]).toLocaleString()}</div><ChevronRight className="text-slate-100" size={20}/></div>
                         </div>
                     ))}
                 </div>
@@ -217,62 +217,62 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-end justify-center">
-            <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 shadow-2xl animate-in slide-in-from-bottom-10 overflow-y-auto max-h-[90vh]">
-                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-bold text-slate-800">{editingId ? '編輯款項' : '新增支出'}</h2><button onClick={() => setIsModalOpen(false)} className="text-slate-200 text-2xl">✕</button></div>
-                <div className="space-y-6">
-                    <div className="flex gap-4 items-end bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-                        <div className="flex-1"><label className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1 block">金額</label><input type="number" inputMode="numeric" value={amountInput} onChange={(e) => setAmountInput(e.target.value)} className="w-full text-4xl font-black text-slate-800 bg-transparent outline-none py-1" placeholder="0" /></div>
-                        <div className="flex bg-white rounded-2xl p-1.5 shadow-sm border border-slate-100">
-                             <button onClick={() => setInputCurrency('KRW')} className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all ${inputCurrency === 'KRW' ? 'bg-sky-400 text-white shadow-md' : 'text-slate-400'}`}>KRW</button>
-                             <button onClick={() => setInputCurrency('TWD')} className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all ${inputCurrency === 'TWD' ? 'bg-sky-400 text-white shadow-md' : 'text-slate-400'}`}>TWD</button>
+            <div className="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 overflow-y-auto max-h-[90vh]">
+                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-800">{editingId ? '編輯款項' : '新增支出'}</h2><button onClick={() => setIsModalOpen(false)} className="text-slate-200 text-xl">✕</button></div>
+                <div className="space-y-4">
+                    <div className="flex gap-3 items-end bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div className="flex-1"><label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-0.5 block">金額</label><input type="number" inputMode="numeric" value={amountInput} onChange={(e) => setAmountInput(e.target.value)} className="w-full text-3xl font-black text-slate-800 bg-transparent outline-none" placeholder="0" /></div>
+                        <div className="flex bg-white rounded-xl p-1 shadow-xs border border-slate-50">
+                             <button onClick={() => setInputCurrency('KRW')} className={`px-2 py-1.5 rounded-lg text-[9px] font-black transition-all ${inputCurrency === 'KRW' ? 'bg-sky-400 text-white' : 'text-slate-400'}`}>KRW</button>
+                             <button onClick={() => setInputCurrency('TWD')} className={`px-2 py-1.5 rounded-lg text-[9px] font-black transition-all ${inputCurrency === 'TWD' ? 'bg-sky-400 text-white' : 'text-slate-400'}`}>TWD</button>
                         </div>
                     </div>
-                    <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none" placeholder="項目內容..." />
+                    <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl text-sm font-bold border-none outline-none" placeholder="項目內容..." />
                     <div>
-                        <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 block ml-1">誰付錢？</label>
-                        <div className="grid grid-cols-5 gap-2">
+                        <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 block ml-1">誰付錢？</label>
+                        <div className="grid grid-cols-5 gap-1.5">
                             {members.map(m => (
-                                <button key={m.id} onClick={() => setPayer(m.id)} className={`flex flex-col items-center gap-1.5 transition-all ${payer === m.id ? 'scale-110' : 'opacity-40 grayscale'}`}>
-                                    <div className={`w-12 h-12 rounded-full border-[3px] flex items-center justify-center p-[1px] transition-all ${payer === m.id ? 'border-sky-400 shadow-active bg-sky-50' : 'border-white shadow-sm bg-white'}`}><img src={m.avatar} className="w-full h-full rounded-full object-cover" /></div>
-                                    <span className={`text-[9px] font-bold truncate w-full text-center ${payer === m.id ? 'text-sky-500' : 'text-slate-500'}`}>{m.name}</span>
+                                <button key={m.id} onClick={() => setPayer(m.id)} className={`flex flex-col items-center gap-1 transition-all ${payer === m.id ? 'scale-110' : 'opacity-40 grayscale'}`}>
+                                    <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 transition-all ${payer === m.id ? 'border-sky-400 shadow-active' : 'border-white bg-white'}`}><img src={m.avatar} className="w-full h-full rounded-full object-cover" /></div>
+                                    <span className={`text-[8px] font-bold truncate w-full text-center ${payer === m.id ? 'text-sky-500' : 'text-slate-500'}`}>{m.name}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
                     <div>
-                        <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 block ml-1">分帳人 (誰參與？)</label>
-                        <div className="grid grid-cols-5 gap-2">
+                        <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 block ml-1">分帳人</label>
+                        <div className="grid grid-cols-5 gap-1.5">
                             {members.map(m => {
                                 const isSel = selectedSplits.includes(m.id);
                                 return (
-                                    <button key={m.id} onClick={() => toggleSplit(m.id)} className={`flex flex-col items-center gap-1.5 transition-all ${isSel ? 'scale-110' : 'opacity-40 grayscale'}`}>
-                                        <div className={`w-12 h-12 rounded-full border-[3px] flex items-center justify-center p-[1px] relative transition-all ${isSel ? 'border-sky-400 shadow-active bg-sky-50' : 'border-white shadow-sm bg-white'}`}>
+                                    <button key={m.id} onClick={() => toggleSplit(m.id)} className={`flex flex-col items-center gap-1 transition-all ${isSel ? 'scale-110' : 'opacity-40 grayscale'}`}>
+                                        <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 relative transition-all ${isSel ? 'border-sky-400 shadow-active' : 'border-white bg-white'}`}>
                                             <img src={m.avatar} className="w-full h-full rounded-full object-cover" />
-                                            {isSel && <div className="absolute inset-0 bg-sky-400/20 flex items-center justify-center"><Check size={16} className="text-white drop-shadow-md" strokeWidth={4} /></div>}
+                                            {isSel && <div className="absolute inset-0 bg-sky-400/20 flex items-center justify-center"><Check size={14} className="text-white drop-shadow-md" strokeWidth={4} /></div>}
                                         </div>
-                                        <span className={`text-[9px] font-bold truncate w-full text-center ${isSel ? 'text-sky-500' : 'text-slate-500'}`}>{m.name}</span>
+                                        <span className={`text-[8px] font-bold truncate w-full text-center ${isSel ? 'text-sky-500' : 'text-slate-500'}`}>{m.name}</span>
                                     </button>
                                 );
                             })}
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-4 mt-8">
-                    {editingId && <button onClick={handleDelete} className="p-5 bg-rose-50 text-rose-500 font-bold rounded-[1.5rem] active:scale-90 transition-all"><Trash2 size={24} /></button>}
-                    <button onClick={handleSave} className="flex-1 py-5 bg-sky-400 text-white text-lg font-bold rounded-[1.5rem] shadow-active active:scale-95 transition-all">{editingId ? '儲存變更' : '確定新增'}</button>
+                <div className="flex gap-3 mt-6">
+                    {editingId && <button onClick={handleDelete} className="p-4 bg-rose-50 text-rose-500 font-bold rounded-xl active:scale-90 transition-all"><Trash2 size={20} /></button>}
+                    <button onClick={handleSave} className="flex-1 py-4 bg-sky-400 text-white text-base font-bold rounded-xl shadow-active active:scale-95 transition-all">{editingId ? '儲存變更' : '確定新增'}</button>
                 </div>
             </div>
         </div>
       )}
       {detailMemberId && (
           <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-end justify-center">
-            <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
-                <div className="flex justify-between items-center mb-6"><div className="flex items-center gap-4"><img src={members.find(m => m.id === detailMemberId)?.avatar} className="w-12 h-12 rounded-full border-2 border-slate-50 shadow-sm"/><h2 className="text-xl font-bold text-slate-800">消費明細</h2></div><button onClick={() => setDetailMemberId(null)} className="text-slate-200 text-2xl">✕</button></div>
-                <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar">
+            <div className="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl max-h-[70vh] overflow-hidden flex flex-col">
+                <div className="flex justify-between items-center mb-4"><div className="flex items-center gap-3"><img src={members.find(m => m.id === detailMemberId)?.avatar} className="w-10 h-10 rounded-full border-2 border-slate-50 shadow-xs"/><h2 className="text-lg font-bold text-slate-800">消費明細</h2></div><button onClick={() => setDetailMemberId(null)} className="text-slate-200 text-xl">✕</button></div>
+                <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
                     {expenses.filter(e => e.splitWithIds.includes(detailMemberId)).map(e => (
-                        <div key={e.id} className="flex justify-between items-center p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100">
-                            <div><div className="text-sm font-bold text-slate-700">{e.description}</div><div className="text-[10px] font-bold text-slate-300 uppercase">{e.date}</div></div>
-                            <div className="text-right"><div className="font-bold text-sky-500">NT$ {Math.round(e.amountTWD / e.splitWithIds.length).toLocaleString()}</div></div>
+                        <div key={e.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div><div className="text-xs font-bold text-slate-700">{e.description}</div><div className="text-[8px] font-bold text-slate-300 uppercase">{e.date}</div></div>
+                            <div className="text-right"><div className="font-bold text-sky-500 text-sm">NT$ {Math.round(e.amountTWD / e.splitWithIds.length).toLocaleString()}</div></div>
                         </div>
                     ))}
                 </div>

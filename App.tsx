@@ -60,15 +60,15 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-full max-w-md mx-auto bg-[#F8FAFC] flex flex-col relative overflow-hidden font-sans">
-      {/* Header following mockup */}
-      <header className="px-8 pt-10 pb-4 bg-transparent z-20">
+      {/* Reduced Header Height */}
+      <header className="px-6 pt-6 pb-2 bg-transparent z-20">
         <div className="flex flex-col">
-           <h1 className="text-[2.5rem] font-bold text-sky-400 tracking-tight leading-none mb-1">Seoul Go!</h1>
-           <div className="flex items-center gap-3">
-              <div className="bg-sky-400 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+           <h1 className="text-3xl font-bold text-sky-400 tracking-tight leading-none mb-1">Seoul Go!</h1>
+           <div className="flex items-center gap-2">
+              <div className="bg-sky-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                 時光膠囊
               </div>
-              <p className="text-[10px] text-slate-300 font-bold tracking-wider">2026.01.30 - 02.05</p>
+              <p className="text-[9px] text-slate-300 font-bold tracking-wider">2026.01.30 - 02.05</p>
            </div>
         </div>
       </header>
@@ -78,9 +78,9 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
 
-      {/* Floating Bottom Navigation */}
-      <div className="px-6 pb-8 pt-2">
-        <nav className="bg-white rounded-[2rem] shadow-nav p-2 flex justify-between items-center z-50 border border-slate-50">
+      {/* Compact Floating Bottom Navigation */}
+      <div className="px-5 pb-6 pt-1">
+        <nav className="bg-white rounded-2xl shadow-nav p-1 flex justify-between items-center z-50 border border-slate-50">
           <NavButton 
             active={activeTab === Tab.SCHEDULE} 
             onClick={() => setActiveTab(Tab.SCHEDULE)} 
@@ -108,40 +108,40 @@ const App: React.FC = () => {
         </nav>
       </div>
 
-      {/* Settings FAB */}
+      {/* Smaller Settings FAB */}
       <button 
         onClick={() => setIsSettingsOpen(true)}
-        className="absolute top-10 right-8 w-10 h-10 rounded-full bg-white shadow-soft flex items-center justify-center border border-slate-100 active:scale-95 transition-all z-30"
+        className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center border border-slate-100 active:scale-95 transition-all z-30"
       >
-         <Settings size={20} className="text-slate-300" />
+         <Settings size={18} className="text-slate-300" />
       </button>
 
       {/* Settings Modal */}
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-end justify-center">
-          <div className="bg-white rounded-t-[3rem] p-8 w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-10">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800">旅伴設定</h2>
-              <button onClick={() => setIsSettingsOpen(false)} className="text-slate-300 p-2">✕</button>
+          <div className="bg-white rounded-t-3xl p-6 w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">旅伴設定</h2>
+              <button onClick={() => setIsSettingsOpen(false)} className="text-slate-300 p-1">✕</button>
             </div>
-            <div className="space-y-4 mb-10">
+            <div className="space-y-3 mb-8">
               {members.map(member => (
-                <div key={member.id} className="flex items-center gap-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                  <div className={`w-12 h-12 rounded-full flex-shrink-0 border-4 border-white shadow-sm overflow-hidden`}>
+                <div key={member.id} className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                  <div className={`w-10 h-10 rounded-full flex-shrink-0 border-2 border-white shadow-sm overflow-hidden`}>
                     <img src={member.avatar} alt="avatar" className="w-full h-full object-cover" />
                   </div>
                   <input 
                     type="text" 
                     value={member.name}
                     onChange={(e) => handleUpdateMemberName(member.id, e.target.value)}
-                    className="flex-1 bg-transparent border-none text-lg font-bold text-slate-700 outline-none"
+                    className="flex-1 bg-transparent border-none text-base font-bold text-slate-700 outline-none"
                   />
                 </div>
               ))}
             </div>
             <button 
               onClick={() => setIsSettingsOpen(false)}
-              className="w-full py-5 bg-sky-400 text-white text-xl font-bold rounded-[2rem] shadow-active active:scale-95 transition-all"
+              className="w-full py-4 bg-sky-400 text-white text-lg font-bold rounded-2xl shadow-active active:scale-95 transition-all"
             >
               完成設定
             </button>
@@ -164,10 +164,10 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
     onClick={onClick}
     className="flex flex-col items-center justify-center flex-1 py-1"
   >
-    <div className={`p-2 rounded-2xl transition-all duration-300 ${active ? 'text-sky-400' : 'text-slate-300'}`}>
-      <Icon size={26} strokeWidth={active ? 2.5 : 2} />
+    <div className={`p-1.5 rounded-xl transition-all duration-300 ${active ? 'text-sky-400 bg-sky-50' : 'text-slate-300'}`}>
+      <Icon size={22} strokeWidth={active ? 2.5 : 2} />
     </div>
-    <span className={`text-[10px] font-bold transition-colors duration-200 mt-0.5 ${active ? 'text-sky-400' : 'text-slate-300'}`}>
+    <span className={`text-[9px] font-bold transition-colors duration-200 mt-0.5 ${active ? 'text-sky-400' : 'text-slate-300'}`}>
       {label}
     </span>
   </button>

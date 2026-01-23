@@ -14,7 +14,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ members }) => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newItemText, setNewItemText] = useState('');
 
-  // Fix: Ensure activeMemberId is initialized correctly from props
   useEffect(() => {
     if (members.length > 0 && !activeMemberId) {
         setActiveMemberId(members[0].id);
@@ -60,67 +59,67 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ members }) => {
   };
 
   return (
-    <div className="h-full flex flex-col p-8">
-      <h2 className="text-3xl font-bold text-slate-800 mb-8 flex items-center gap-3">
-        <div className="bg-amber-100 p-3 rounded-2xl"><ShoppingBag className="text-amber-500" /></div>
+    <div className="h-full flex flex-col p-6">
+      <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+        <div className="bg-amber-100 p-2 rounded-xl"><ShoppingBag size={20} className="text-amber-500" /></div>
         購物清單
       </h2>
 
-      <div className="mb-4">
-          <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1 mb-2 block">是誰想買？</label>
-          <div className="grid grid-cols-5 gap-2 py-4">
+      <div className="mb-3">
+          <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest ml-1 mb-1 block">是誰想買？</label>
+          <div className="grid grid-cols-5 gap-1.5 py-2">
              {members.map(m => (
                 <button
                    key={m.id}
                    onClick={() => setActiveMemberId(m.id)}
-                   className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${activeMemberId === m.id ? 'scale-110' : 'opacity-40 grayscale'}`}
+                   className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeMemberId === m.id ? 'scale-110' : 'opacity-40 grayscale'}`}
                 >
-                   <div className={`w-12 h-12 rounded-full border-[3px] flex items-center justify-center p-[1px] transition-all ${activeMemberId === m.id ? 'border-sky-400 shadow-active bg-sky-50' : 'border-white shadow-sm bg-white'}`}>
+                   <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 transition-all ${activeMemberId === m.id ? 'border-sky-400 shadow-active' : 'border-white bg-white shadow-xs'}`}>
                        <img src={m.avatar} alt={m.name} className="w-full h-full rounded-full object-cover" />
                    </div>
-                   <span className={`text-[9px] font-bold truncate w-full text-center ${activeMemberId === m.id ? 'text-sky-500' : 'text-slate-500'}`}>{m.name}</span>
+                   <span className={`text-[8px] font-bold truncate w-full text-center ${activeMemberId === m.id ? 'text-sky-500' : 'text-slate-500'}`}>{m.name}</span>
                 </button>
              ))}
           </div>
        </div>
 
-      <div className="flex-1 bg-white rounded-[2.5rem] p-8 shadow-soft border border-slate-50 flex flex-col overflow-hidden">
-        <h3 className="text-xl font-bold text-slate-700 mb-6">{activeMember?.name} 的願望</h3>
+      <div className="flex-1 bg-white rounded-3xl p-6 shadow-soft border border-slate-50 flex flex-col overflow-hidden">
+        <h3 className="text-lg font-bold text-slate-700 mb-4">{activeMember?.name} 的願望</h3>
         
-        <form onSubmit={addItem} className="mb-6 relative">
+        <form onSubmit={addItem} className="mb-4 relative">
              <input 
                 type="text" 
                 value={newItemText}
                 onChange={(e) => setNewItemText(e.target.value)}
                 placeholder="想要買什麼？" 
-                className="w-full pl-6 pr-14 py-4 rounded-2xl bg-slate-50 outline-none text-sm font-bold text-slate-700"
+                className="w-full pl-4 pr-12 py-3 rounded-xl bg-slate-50 outline-none text-xs font-bold text-slate-700"
              />
-             <button type="submit" className="absolute right-2 top-2 w-10 h-10 bg-sky-400 text-white rounded-xl flex items-center justify-center">
-               <Plus size={24} />
+             <button type="submit" className="absolute right-1.5 top-1.5 w-8 h-8 bg-sky-400 text-white rounded-lg flex items-center justify-center">
+               <Plus size={20} />
              </button>
         </form>
 
-        <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar">
+        <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
           {filteredTodos.map(item => (
             <div 
               key={item.id} 
               onClick={() => toggleTodo(item.id, item.completed)}
-              className={`flex items-center p-4 rounded-2xl cursor-pointer transition-all active:scale-95 ${item.completed ? 'bg-slate-50/50 opacity-50' : 'bg-slate-50 border border-slate-100'}`}
+              className={`flex items-center p-3 rounded-xl cursor-pointer transition-all active:scale-95 ${item.completed ? 'bg-slate-50/50 opacity-50' : 'bg-slate-50 border border-slate-100'}`}
             >
-              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center mr-4 transition-all ${item.completed ? 'bg-sky-400 border-sky-400' : 'border-slate-300 bg-white'}`}>
-                {item.completed && <Check size={16} className="text-white" strokeWidth={3} />}
+              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center mr-3 transition-all ${item.completed ? 'bg-sky-400 border-sky-400' : 'border-slate-300 bg-white'}`}>
+                {item.completed && <Check size={12} className="text-white" strokeWidth={4} />}
               </div>
-              <span className={`text-sm font-bold flex-1 ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{item.text}</span>
+              <span className={`text-xs font-bold flex-1 ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{item.text}</span>
               <button 
                 onClick={(e) => { e.stopPropagation(); if(window.confirm("確定刪除此清單項目？")) deleteDoc(doc(db, 'todos', item.id)); }} 
-                className="text-slate-300 ml-2 p-1 hover:text-rose-400 transition-colors"
+                className="text-slate-200 ml-1.5 p-1 hover:text-rose-400 transition-colors"
               >
-                <Trash2 size={16} />
+                <Trash2 size={14} />
               </button>
             </div>
           ))}
           {filteredTodos.length === 0 && (
-             <div className="text-center py-10 text-slate-200 italic font-bold text-sm">還沒有心願項目</div>
+             <div className="text-center py-6 text-slate-200 italic font-bold text-[11px]">還沒有心願項目</div>
           )}
         </div>
       </div>
