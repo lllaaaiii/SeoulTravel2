@@ -139,6 +139,15 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   expenses.forEach(exp => { if (!expensesByDate[exp.date]) expensesByDate[exp.date] = []; expensesByDate[exp.date].push(exp); });
   const sortedDates = Object.keys(expensesByDate).sort((a, b) => b.localeCompare(a));
 
+  const getMemberExpenses = (memberId: string) => {
+    return expenses
+      .filter(exp => exp.splitWithIds.includes(memberId))
+      .map(exp => ({
+        ...exp,
+        shareAmount: Math.round(exp.amountTWD / exp.splitWithIds.length)
+      }));
+  };
+
   return (
     <div className="h-full flex flex-col no-scrollbar">
       <div className="px-6 pt-4">
@@ -187,7 +196,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-6 pb-24 pt-4 space-y-5 no-scrollbar">
-            {/* 修改點：改為淺藍色背景 (bg-sky-50) 並將標題改為中文 */}
+            {/* 匯率設定卡片 - 修正溢出問題 */}
             <div className="bg-sky-50 rounded-2xl p-5 border border-sky-100 shadow-soft">
                 <div className="flex justify-between items-center mb-4">
                    <h4 className="text-sky-500 text-[11px] font-black tracking-tight uppercase">匯率設定</h4>
@@ -200,22 +209,22 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                       <Landmark size={10} /> 臺銀牌告匯率 <ExternalLink size={10} />
                    </a>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                    <div className="text-slate-600 text-[11px] font-black leading-none uppercase shrink-0">1 KRW ≈</div>
-                   <div className="flex-1 bg-white border border-sky-400/20 rounded-xl px-4 h-12 flex items-center shadow-sm">
+                   <div className="flex-1 min-w-0 bg-white border border-sky-400/20 rounded-xl px-2 sm:px-4 h-12 flex items-center shadow-sm">
                       <input 
                          type="number" 
                          step="0.0001"
                          value={exchangeRate} 
                          onChange={(e) => handleRateChange(e.target.value)}
-                         className="flex-1 text-center text-sky-500 text-xl font-black bg-transparent outline-none"
+                         className="w-full text-center text-sky-500 text-lg sm:text-xl font-black bg-transparent outline-none"
                       />
                    </div>
                    <div className="text-slate-600 text-[11px] font-black leading-none uppercase shrink-0">TWD</div>
                 </div>
             </div>
 
-            {/* 統一結算報表 */}
+            {/* 統一結算報表 - 縮短間距 */}
             <div>
                 <h3 className="text-slate-600 text-sm font-bold mb-3 px-1">統一結算報表 (TWD)</h3>
                 <div className="bg-white rounded-2xl shadow-soft border border-slate-50 overflow-hidden">
@@ -224,20 +233,20 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                         const from = members.find(m => m.id === t.from), to = members.find(m => m.id === t.to);
                         return (
                             <div key={idx} className="p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 flex-1 max-w-[150px]">
-                                    <div className="flex flex-col items-center gap-1 w-12 shrink-0">
+                                <div className="flex items-center gap-1 flex-1">
+                                    <div className="flex flex-col items-center gap-1 w-10 shrink-0">
                                         <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-100 shadow-xs"><img src={from?.avatar} /></div>
-                                        <span className="text-rose-400 font-bold text-[9px] truncate w-full text-center">{from?.name}</span>
+                                        <span className="text-rose-400 font-bold text-[8px] truncate w-full text-center">{from?.name}</span>
                                     </div>
-                                    <div className="flex-shrink-0 mx-0.5">
+                                    <div className="flex-shrink-0 px-1">
                                        <ArrowRight size={14} className="text-slate-200" />
                                     </div>
-                                    <div className="flex flex-col items-center gap-1 w-12 shrink-0">
+                                    <div className="flex flex-col items-center gap-1 w-10 shrink-0">
                                         <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-100 shadow-xs"><img src={to?.avatar} /></div>
-                                        <span className="text-emerald-500 font-bold text-[9px] truncate w-full text-center">{to?.name}</span>
+                                        <span className="text-emerald-500 font-bold text-[8px] truncate w-full text-center">{to?.name}</span>
                                     </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right ml-2">
                                     <div className="text-slate-300 text-[9px] font-bold mb-0.5 uppercase tracking-tighter">Settlement</div>
                                     <div className="font-black text-sky-400 text-base tracking-tight leading-none">NT$ {t.amount.toLocaleString()}</div>
                                 </div>
@@ -249,7 +258,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                 </div>
             </div>
 
-            {/* 個人總額統計 */}
+            {/* 個人總額統計 - 點擊功能修復 */}
             <div>
                 <h3 className="text-slate-600 text-sm font-bold mb-3 px-1">個人分攤統計</h3>
                 <div className="space-y-2">
@@ -270,6 +279,52 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
         </div>
       )}
 
+      {/* 個人支出明細 Modal */}
+      {detailMemberId && (
+        <div className="fixed inset-0 z-[110] bg-black/30 backdrop-blur-sm flex items-end justify-center">
+          <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10 flex flex-col max-h-[85vh]">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                 <img src={members.find(m => m.id === detailMemberId)?.avatar} className="w-10 h-10 rounded-full border border-slate-100 shadow-sm" />
+                 <div>
+                    <h2 className="text-lg font-bold text-slate-800">{members.find(m => m.id === detailMemberId)?.name} 的支出明細</h2>
+                    <p className="text-[10px] font-bold text-sky-400 uppercase tracking-widest">Individual Report</p>
+                 </div>
+              </div>
+              <button onClick={() => setDetailMemberId(null)} className="text-slate-300 p-2 text-xl active:scale-90">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-6">
+               {getMemberExpenses(detailMemberId).map(exp => (
+                 <div key={exp.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 bg-white rounded-lg shadow-xs flex items-center justify-center text-base">{(CATEGORY_ICONS as any)[exp.category] || '💸'}</div>
+                       <div>
+                          <div className="text-xs font-bold text-slate-700">{exp.description}</div>
+                          <div className="text-[9px] font-bold text-slate-400">{exp.date} • {exp.splitWithIds.length} 人分帳</div>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <div className="text-sm font-black text-sky-400">NT$ {exp.shareAmount.toLocaleString()}</div>
+                       <div className="text-[8px] font-bold text-slate-300">Share Amount</div>
+                    </div>
+                 </div>
+               ))}
+               {getMemberExpenses(detailMemberId).length === 0 && (
+                 <div className="text-center py-12 text-slate-200 font-bold text-xs uppercase italic tracking-widest">No expenses found</div>
+               )}
+            </div>
+            
+            <div className="pt-4 border-t border-slate-50">
+               <div className="bg-sky-400 p-4 rounded-2xl flex justify-between items-center shadow-active">
+                  <div className="text-brand-100 font-black text-xs uppercase tracking-widest">Total Share</div>
+                  <div className="text-white font-black text-xl">NT$ {Math.round(settlement.shareTotals[detailMemberId]).toLocaleString()}</div>
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 新增/編輯視窗 */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm flex items-end justify-center">
@@ -277,8 +332,8 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                 <div className="flex justify-between items-center mb-6"><h2 className="text-lg font-bold text-slate-800">{editingId ? '編輯款項' : '新增支出'}</h2><button onClick={() => setIsModalOpen(false)} className="text-slate-300 text-xl">✕</button></div>
                 <div className="space-y-4">
                     <div className="flex gap-3 items-end bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <div className="flex-1"><label className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1 block px-1">Amount</label><input type="number" inputMode="numeric" value={amountInput} onChange={(e) => setAmountInput(e.target.value)} className="w-full text-2xl font-bold text-slate-800 bg-transparent outline-none" placeholder="0" /></div>
-                        <div className="flex bg-white rounded-xl p-1 shadow-xs border border-slate-100">
+                        <div className="flex-1 min-w-0"><label className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1 block px-1">Amount</label><input type="number" inputMode="numeric" value={amountInput} onChange={(e) => setAmountInput(e.target.value)} className="w-full text-2xl font-bold text-slate-800 bg-transparent outline-none" placeholder="0" /></div>
+                        <div className="flex bg-white rounded-xl p-1 shadow-xs border border-slate-100 shrink-0">
                              <button onClick={() => setInputCurrency('KRW')} className={`px-2 py-1 rounded-lg text-[9px] font-bold transition-all ${inputCurrency === 'KRW' ? 'bg-sky-400 text-white' : 'text-slate-400'}`}>KRW</button>
                              <button onClick={() => setInputCurrency('TWD')} className={`px-2 py-1 rounded-lg text-[9px] font-bold transition-all ${inputCurrency === 'TWD' ? 'bg-sky-400 text-white' : 'text-slate-400'}`}>TWD</button>
                         </div>
@@ -289,7 +344,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                         <div className="grid grid-cols-5 gap-2">
                             {members.map(m => (
                                 <button key={m.id} onClick={() => setPayer(m.id)} className={`flex flex-col items-center gap-1 transition-all ${payer === m.id ? 'scale-105' : 'opacity-40 grayscale'}`}>
-                                    {/* Fix: use m.avatar instead of member.avatar */}
                                     <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 transition-all ${payer === m.id ? 'border-sky-400 shadow-active' : 'border-white bg-white'}`}><img src={m.avatar} className="w-full h-full rounded-full object-cover" /></div>
                                     <span className={`text-[8px] font-bold truncate w-full text-center ${payer === m.id ? 'text-sky-400' : 'text-slate-500'}`}>{m.name}</span>
                                 </button>

@@ -6,7 +6,7 @@ import { ScheduleView } from './components/ScheduleView';
 import { ExpenseView } from './components/ExpenseView';
 import { PlanningView } from './components/PlanningView';
 import { JournalView } from './components/JournalView';
-import { Calendar, CircleDollarSign, BookOpen, ShoppingBag, Settings } from 'lucide-react';
+import { Calendar, CircleDollarSign, BookOpen, ShoppingBag, Settings, User, Image as ImageIcon } from 'lucide-react';
 import { db } from './services/firebase';
 import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
 
@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.SCHEDULE);
   const [members, setMembers] = useState<Member[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'members'), (snapshot) => {
@@ -61,22 +62,35 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-full max-w-md mx-auto bg-[#FCFBF7] flex flex-col relative overflow-hidden font-sans">
-      {/* Header Area - we.png in the middle */}
+      {/* Header Area */}
       <header className="px-6 pt-10 pb-4 bg-transparent z-20 flex items-center justify-between gap-3">
-        <div className="flex flex-col flex-1">
-           <h1 className="text-xl font-black text-sky-400 tracking-tight leading-none mb-1 uppercase">Seoul Go!</h1>
+        <div className="flex flex-col flex-1 min-w-0">
+           <h1 className="text-xl font-black text-sky-400 tracking-tight leading-none mb-1 uppercase truncate">Seoul Go!</h1>
            <div className="flex items-center gap-2">
-              {/* 修改點：由黃底藍字變更為藍底黃字 (bg-sky-400 text-brand-100) */}
-              <div className="bg-sky-400 text-brand-100 border border-sky-500/20 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+              <div className="bg-sky-400 text-brand-100 border border-sky-500/20 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap">
                 時光膠囊
               </div>
-              <p className="text-[9px] text-slate-300 font-bold tracking-widest">2026.01.30-02.05</p>
+              <p className="text-[9px] text-slate-300 font-bold tracking-widest whitespace-nowrap">2026.01.30-02.05</p>
            </div>
         </div>
         
-        {/* we.png in the middle */}
-        <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-soft border border-white shrink-0">
-          <img src="we.png" alt="Travelers" className="w-full h-full object-cover" />
+        {/* we.png 優化顯示：如果檔案存在於根目錄且名稱為 we.png 則會顯示 */}
+        <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-soft border-2 border-white shrink-0 bg-sky-50 flex items-center justify-center relative group">
+          {!imageError ? (
+            <img 
+              src="we.png" 
+              alt="Travelers" 
+              className="w-full h-full object-cover relative z-10" 
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-0.5">
+               <ImageIcon className="text-sky-200" size={20} />
+               <span className="text-[7px] font-bold text-sky-200 uppercase">we.png</span>
+            </div>
+          )}
+          {/* 裝飾線條 */}
+          <div className="absolute top-0 right-0 w-3 h-3 bg-brand-100/30 rounded-bl-lg"></div>
         </div>
 
         {/* Settings Button */}
