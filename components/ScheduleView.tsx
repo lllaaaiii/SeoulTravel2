@@ -194,7 +194,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
             {selectedDate === '2026-01-30' && (
               <div className="bg-white rounded-[24px] border-2 border-dashed border-sky-400/20 p-4 shadow-soft relative overflow-hidden mb-4">
                 <div className="flex justify-between items-center mb-4">
-                  {/* 修改點：改為藍底黃字樣式 (bg-sky-400 text-brand-100) */}
                   <div className="bg-sky-400 text-brand-100 border border-sky-500/30 text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-tighter">出發</div>
                   <div className="text-sky-400 text-[10px] font-bold tracking-widest uppercase">TPE → ICN</div>
                 </div>
@@ -219,11 +218,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
               </div>
             )}
 
-            {/* 回程航班 */}
+            {/* 回程航班 - 修正飛機圖案方向 rotate-45 為向右 */}
             {selectedDate === '2026-02-05' && (
               <div className="bg-white rounded-[24px] border-2 border-dashed border-sky-400/20 p-4 shadow-soft relative overflow-hidden mb-4">
                 <div className="flex justify-between items-center mb-4">
-                  {/* 修改點：改為藍底黃字樣式 (bg-sky-400 text-brand-100) */}
                   <div className="bg-sky-400 text-brand-100 border border-sky-500/30 text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-tighter">抵達</div>
                   <div className="text-sky-400 text-[10px] font-bold tracking-widest uppercase">ICN → TPE</div>
                 </div>
@@ -233,7 +231,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                     <div className="bg-slate-50 px-2 py-0.5 rounded-full text-[9px] text-slate-400 mt-1 font-bold">16:20</div>
                   </div>
                   <div className="flex-1 flex flex-col items-center px-3 relative">
-                    <Plane size={14} className="text-sky-400 mb-1 rotate-90" />
+                    <Plane size={14} className="text-sky-400 mb-1 rotate-45" />
                     <div className="w-full h-[1px] bg-sky-100 flex items-center justify-between">
                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -ml-0.5"></div>
                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 -mr-0.5"></div>
@@ -248,7 +246,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
               </div>
             )}
 
-            {/* 修改點：將「新增行程」按鈕由黃底藍字改為藍底黃字樣式 (bg-sky-400 text-brand-100) */}
             <button 
                 onClick={() => { setEditingId(null); setNewLocation(''); setNewNotes(''); setIsModalOpen(true); }}
                 className="w-full bg-sky-400 text-brand-100 font-black py-4 rounded-2xl shadow-active flex items-center justify-center space-x-2 active:scale-[0.98] transition-all mb-4 border border-sky-500/20"
