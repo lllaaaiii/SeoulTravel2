@@ -121,7 +121,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
           >
             {d.val === 'PRE_TRIP' ? (
               <>
-                <span className="text-[7px] font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">TASK</span>
+                <span className="text-[7px] font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">PRE</span>
                 <span className="text-base leading-none text-sky-400">📝</span>
               </>
             ) : (
@@ -218,7 +218,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
               </div>
             )}
 
-            {/* 回程航班 - 修正飛機圖案方向 rotate-45 為向右 */}
+            {/* 回程航班 */}
             {selectedDate === '2026-02-05' && (
               <div className="bg-white rounded-[24px] border-2 border-dashed border-sky-400/20 p-4 shadow-soft relative overflow-hidden mb-4">
                 <div className="flex justify-between items-center mb-4">

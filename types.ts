@@ -1,3 +1,4 @@
+
 export interface Member {
   id: string;
   name: string;
@@ -49,6 +50,7 @@ export interface Expense {
   payerId: string;
   splitWithIds: string[]; // IDs of members involved
   date: string;
+  time: string; // 新增時間欄位
   timestamp?: string;
 }
 

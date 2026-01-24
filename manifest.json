@@ -10,13 +10,13 @@
   "theme_color": "#3D74B6",
   "icons": [
     {
-      "src": "https://api.dicebear.com/7.x/avataaars/svg?seed=SeoulGo&backgroundColor=3D74B6",
+      "src": "https://cdn-icons-png.flaticon.com/512/2151/2151325.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://api.dicebear.com/7.x/avataaars/svg?seed=SeoulGo&backgroundColor=3D74B6",
+      "src": "https://cdn-icons-png.flaticon.com/512/2151/2151325.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

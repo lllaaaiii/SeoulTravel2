@@ -1,24 +1,24 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tab, Member } from './types';
 import { MEMBERS } from './constants';
 import { ScheduleView } from './components/ScheduleView';
 import { ExpenseView } from './components/ExpenseView';
 import { PlanningView } from './components/PlanningView';
 import { JournalView } from './components/JournalView';
-import { Calendar, CircleDollarSign, BookOpen, ShoppingBag, Settings, Image as ImageIcon, Camera, User } from 'lucide-react';
+import { Calendar, CircleDollarSign, BookOpen, ShoppingBag, Settings } from 'lucide-react';
 import { db } from './services/firebase';
-import { collection, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.SCHEDULE);
   const [members, setMembers] = useState<Member[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [coverImage, setCoverImage] = useState<string | null>(null);
-  const coverFileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 固定嵌入照片網址
+  const coverImage = "https://i.postimg.cc/c1zyQDmq/we.png";
 
   useEffect(() => {
-    // 監聽成員資料
     const unsubscribeMembers = onSnapshot(collection(db, 'members'), (snapshot) => {
       const fetchedMembers: Member[] = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -29,16 +29,8 @@ const App: React.FC = () => {
       else seedMembers();
     });
 
-    // 監聽封面照片
-    const unsubscribeConfig = onSnapshot(doc(db, 'config', 'settings'), (snapshot) => {
-      if (snapshot.exists()) {
-        setCoverImage(snapshot.data().coverImage || null);
-      }
-    });
-
     return () => {
       unsubscribeMembers();
-      unsubscribeConfig();
     };
   }, []);
 
@@ -64,23 +56,6 @@ const App: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleCoverImageClick = () => {
-    coverFileInputRef.current?.click();
-  };
-
-  const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64String = reader.result as string;
-      setCoverImage(base64String);
-      await setDoc(doc(db, 'config', 'settings'), { coverImage: base64String }, { merge: true });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const renderContent = () => {
     return (
       <div className="page-transition h-full overflow-y-auto no-scrollbar">
@@ -100,50 +75,30 @@ const App: React.FC = () => {
   return (
     <div className="h-screen w-full max-w-md mx-auto bg-[#FCFBF7] flex flex-col relative overflow-hidden font-sans">
       {/* Header Area */}
-      <header className="px-6 pt-10 pb-4 bg-transparent z-20 flex items-center justify-between gap-3">
+      <header className="px-6 pt-10 pb-4 bg-transparent z-20 flex items-center justify-between gap-2">
         <div className="flex flex-col flex-1 min-w-0">
-           <h1 className="text-xl font-black text-sky-400 tracking-tight leading-none mb-1 uppercase truncate">Seoul Go!</h1>
-           <div className="flex items-center gap-2">
-              <div className="bg-sky-400 text-brand-100 border border-sky-500/20 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap">
+           <h1 className="text-2xl font-black text-sky-400 tracking-tighter leading-none mb-1.5 uppercase truncate drop-shadow-sm">Seoul Go!</h1>
+           <div className="flex flex-col items-start gap-1">
+              <div className="bg-sky-400 text-brand-100 border border-sky-500/20 text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap uppercase tracking-widest">
                 時光膠囊
               </div>
-              <p className="text-[9px] text-slate-300 font-bold tracking-widest whitespace-nowrap">2026.01.30-02.05</p>
+              <p className="text-[8px] text-slate-300 font-black tracking-widest whitespace-nowrap leading-none pl-0.5">2026.01.30 - 02.05</p>
            </div>
         </div>
         
-        {/* Cover Image Container - 寬度拉長 3 倍 (w-[168px]) */}
-        <div 
-          onClick={handleCoverImageClick}
-          className="w-[168px] h-14 rounded-2xl overflow-hidden shadow-soft border-2 border-white shrink-0 bg-sky-50 flex items-center justify-center relative active:scale-95 transition-all cursor-pointer group"
-        >
-          {coverImage ? (
-            <img 
-              src={coverImage} 
-              alt="Cover" 
-              className="w-full h-full object-cover relative z-10" 
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-0.5">
-               <ImageIcon className="text-sky-200" size={20} />
-               <span className="text-[6px] font-black text-sky-200 uppercase leading-none">Set Photo</span>
-            </div>
-          )}
-          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 z-20 flex items-center justify-center transition-opacity">
-            <Camera size={16} className="text-white" />
-          </div>
-          <input 
-            type="file" 
-            ref={coverFileInputRef} 
-            onChange={handleCoverFileChange} 
-            accept="image/*" 
-            className="hidden" 
+        {/* 去背效果 Cover Image - 尺寸放大，使用混合模式與濾鏡 */}
+        <div className="w-44 h-24 shrink-0 relative flex items-center justify-center overflow-visible -my-4">
+          <img 
+            src={coverImage} 
+            alt="Cover" 
+            className="h-full w-auto object-contain mix-blend-multiply filter drop-shadow-[0_8px_12px_rgba(0,0,0,0.15)] transition-transform duration-500 hover:scale-110 active:scale-95" 
           />
         </div>
 
         {/* Settings Button */}
         <button 
           onClick={() => setIsSettingsOpen(true)}
-          className="w-10 h-10 rounded-xl bg-white shadow-soft flex items-center justify-center border border-slate-50 active:scale-95 transition-all shrink-0"
+          className="w-10 h-10 rounded-xl bg-white/50 backdrop-blur-sm shadow-soft flex items-center justify-center border border-white active:scale-95 transition-all shrink-0"
         >
            <Settings size={20} className="text-slate-300" />
         </button>
@@ -184,7 +139,6 @@ const App: React.FC = () => {
         </nav>
       </div>
 
-      {/* Settings Modal - 新增頭像更換功能 */}
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-end justify-center">
           <div className="bg-white rounded-t-[32px] p-6 w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-10">
@@ -192,15 +146,12 @@ const App: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-800">旅伴設定</h2>
               <button onClick={() => setIsSettingsOpen(false)} className="text-slate-300 p-1 text-xl">✕</button>
             </div>
-            <div className="space-y-4 mb-8">
+            <div className="space-y-4 mb-8 max-h-[50vh] overflow-y-auto no-scrollbar">
               {members.map(member => (
                 <div key={member.id} className="flex items-center gap-3 bg-slate-50 p-2 pr-4 rounded-2xl border border-slate-100">
                   <label className="relative cursor-pointer group shrink-0">
                     <div className="w-12 h-12 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white flex items-center justify-center">
                       <img src={member.avatar} alt="avatar" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                        <Camera size={14} className="text-white" />
-                      </div>
                     </div>
                     <input 
                       type="file" 
