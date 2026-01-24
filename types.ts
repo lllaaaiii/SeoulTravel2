@@ -47,6 +47,7 @@ export interface Expense {
   currency: 'KRW' | 'TWD'; // Track original input currency
   category: string;
   description: string;
+  notes?: string; // 新增備註
   payerId: string;
   splitWithIds: string[]; // IDs of members involved
   date: string;

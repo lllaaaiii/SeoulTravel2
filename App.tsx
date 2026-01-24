@@ -77,16 +77,16 @@ const App: React.FC = () => {
       {/* Header Area */}
       <header className="px-6 pt-10 pb-4 bg-transparent z-20 flex items-center justify-between gap-2">
         <div className="flex flex-col flex-1 min-w-0">
-           <h1 className="text-2xl font-black text-sky-400 tracking-tighter leading-none mb-1.5 uppercase truncate drop-shadow-sm">Seoul Go!</h1>
-           <div className="flex flex-col items-start gap-1">
-              <div className="bg-sky-400 text-brand-100 border border-sky-500/20 text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap uppercase tracking-widest">
+           <h1 className="text-2xl font-black text-sky-400 tracking-tighter leading-none mb-2 uppercase truncate drop-shadow-sm">Seoul Go!</h1>
+           <div className="flex flex-col items-start gap-1.5">
+              <div className="bg-sky-400 text-brand-100 border border-sky-500/20 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm whitespace-nowrap uppercase tracking-widest">
                 時光膠囊
               </div>
-              <p className="text-[8px] text-slate-300 font-black tracking-widest whitespace-nowrap leading-none pl-0.5">2026.01.30 - 02.05</p>
+              <p className="text-[9px] text-slate-400 font-black tracking-widest whitespace-nowrap leading-none pl-0.5">2026.01.30 - 02.05</p>
            </div>
         </div>
         
-        {/* 去背效果 Cover Image - 尺寸微縮，維持立體貼紙感 */}
+        {/* 去背效果 Cover Image */}
         <div className="w-36 h-20 shrink-0 relative flex items-center justify-center overflow-visible -my-2">
           <img 
             src={coverImage} 

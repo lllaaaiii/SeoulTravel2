@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Expense, Member, EventCategory } from '../types';
 import { CATEGORY_ICONS } from '../constants';
-import { Plus, Users, Calendar, X, ChevronRight, Trash2, Check, Landmark, ArrowRight, ExternalLink, Clock, ChevronDown, Tag } from 'lucide-react';
+import { Plus, Users, Calendar, X, ChevronRight, Trash2, Check, Landmark, ArrowRight, ExternalLink, Clock, ChevronDown, Tag, PieChart, CreditCard, ChevronLeft } from 'lucide-react';
 import { db } from '../services/firebase';
 import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, setDoc, getDoc } from 'firebase/firestore';
 
@@ -15,7 +15,9 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [exchangeRate, setExchangeRate] = useState<number>(0.0245);
   
-  // 自定義分類狀態
+  // 用於顯示個人支出細項的 Modal 狀態
+  const [viewingMemberDetailsId, setViewingMemberDetailsId] = useState<string | null>(null);
+
   const [customCategories, setCustomCategories] = useState<Record<string, string>>({});
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCatName, setNewCatName] = useState('');
@@ -23,11 +25,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [detailMemberId, setDetailMemberId] = useState<string | null>(null); 
   
   const [amountInput, setAmountInput] = useState('');
   const [inputCurrency, setInputCurrency] = useState<'KRW' | 'TWD'>('KRW');
   const [description, setDescription] = useState('');
+  const [notes, setNotes] = useState(''); // 新增備註狀態
   const [category, setCategory] = useState<string>(EventCategory.FOOD);
   const [payer, setPayer] = useState('');
   const [selectedSplits, setSelectedSplits] = useState<string[]>([]);
@@ -80,46 +82,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
 
   const allCategories = { ...CATEGORY_ICONS, ...customCategories };
 
-  const handleAddNewCategory = async () => {
-    if (!newCatName.trim()) return;
-    const updated = { ...customCategories, [newCatName.trim()]: newCatEmoji };
-    setCustomCategories(updated);
-    setCategory(newCatName.trim());
-    setIsAddingCategory(false);
-    setNewCatName('');
-    await setDoc(doc(db, 'config', 'settings'), { customCategories: updated }, { merge: true });
-  };
-
-  const openAddModal = () => {
-    setEditingId(null);
-    setAmountInput('');
-    setInputCurrency('KRW');
-    setDescription('');
-    setCategory(EventCategory.FOOD);
-    setNewDate(new Date().toISOString().split('T')[0]);
-    setNewTime(getCurrentTime());
-    setIsAddingCategory(false);
-    if (members.length > 0) {
-      setPayer(members[0].id);
-      setSelectedSplits(members.map(m => m.id));
-    }
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (exp: Expense) => {
-    setEditingId(exp.id);
-    setInputCurrency(exp.currency || 'KRW');
-    setAmountInput(exp.currency === 'KRW' ? exp.amountKRW.toString() : exp.amountTWD.toString());
-    setDescription(exp.description);
-    setCategory(exp.category);
-    setPayer(exp.payerId);
-    setSelectedSplits(exp.splitWithIds);
-    setNewDate(exp.date);
-    setNewTime(exp.time || '00:00');
-    setIsAddingCategory(false);
-    setIsModalOpen(true);
-  };
-
   const handleSave = async () => {
     const inputVal = parseFloat(amountInput);
     if (!amountInput || isNaN(inputVal) || !description.trim()) { alert("請輸入金額與描述！"); return; }
@@ -138,7 +100,9 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
     
     const data = { 
       amountKRW, amountTWD, currency: inputCurrency, category, 
-      description: description.trim(), payerId: payer, splitWithIds: selectedSplits, 
+      description: description.trim(), 
+      notes: notes.trim(), // 包含備註
+      payerId: payer, splitWithIds: selectedSplits, 
       date: newDate, time: newTime || '00:00', timestamp: new Date().toISOString() 
     };
 
@@ -148,21 +112,27 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   };
 
   const calculateSettlement = () => {
-    const balances: Record<string, number> = {};
-    const shareTotals: Record<string, number> = {};
-    members.forEach(m => { balances[m.id] = 0; shareTotals[m.id] = 0; });
+    const memberPaid: Record<string, number> = {};
+    const memberShare: Record<string, number> = {};
+    members.forEach(m => { memberPaid[m.id] = 0; memberShare[m.id] = 0; });
+    
     expenses.forEach(exp => {
         const currentTWD = exp.currency === 'KRW' ? Math.round(exp.amountKRW * exchangeRate) : exp.amountTWD;
-        balances[exp.payerId] += currentTWD;
+        memberPaid[exp.payerId] += currentTWD;
         const splitCount = exp.splitWithIds.length;
         if (splitCount > 0) {
             const share = currentTWD / splitCount;
-            exp.splitWithIds.forEach(id => { if (balances[id] !== undefined) { balances[id] -= share; shareTotals[id] += share; } });
+            exp.splitWithIds.forEach(id => { if (memberShare[id] !== undefined) { memberShare[id] += share; } });
         }
     });
+
+    const balances: Record<string, number> = {};
+    members.forEach(m => { balances[m.id] = memberPaid[m.id] - memberShare[m.id]; });
+
     const debtors: {id: string, amount: number}[] = [], creditors: {id: string, amount: number}[] = [];
     Object.entries(balances).forEach(([id, amount]) => { if (amount < -1) debtors.push({ id, amount }); else if (amount > 1) creditors.push({ id, amount }); });
     debtors.sort((a, b) => a.amount - b.amount); creditors.sort((a, b) => b.amount - a.amount);
+    
     const transactions: {from: string, to: string, amount: number}[] = [];
     let i = 0, j = 0;
     while (i < debtors.length && j < creditors.length) {
@@ -171,7 +141,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
         d.amount += amt; c.amount -= amt;
         if (Math.abs(d.amount) < 1) i++; if (c.amount < 1) j++;
     }
-    return { transactions, shareTotals };
+    return { transactions, memberPaid, memberShare };
   };
 
   const settlement = calculateSettlement();
@@ -179,56 +149,96 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   expenses.forEach(exp => { if (!expensesByDate[exp.date]) expensesByDate[exp.date] = []; expensesByDate[exp.date].push(exp); });
   const sortedDates = Object.keys(expensesByDate).sort((a, b) => b.localeCompare(a));
 
+  const viewingMember = members.find(m => m.id === viewingMemberDetailsId);
+
+  // 彈窗細項日期分組邏輯
+  const groupedMemberExpenses: Record<string, Expense[]> = {};
+  if (viewingMember) {
+    expenses.filter(e => e.splitWithIds.includes(viewingMember.id)).forEach(exp => {
+        if (!groupedMemberExpenses[exp.date]) groupedMemberExpenses[exp.date] = [];
+        groupedMemberExpenses[exp.date].push(exp);
+    });
+  }
+  const sortedMemberDates = Object.keys(groupedMemberExpenses).sort((a, b) => b.localeCompare(a));
+
+  const handleAddNewCategory = async () => {
+    if (!newCatName.trim()) return;
+    const updated = { ...customCategories, [newCatName.trim()]: newCatEmoji };
+    setCustomCategories(updated);
+    setIsAddingCategory(false);
+    await setDoc(doc(db, 'config', 'settings'), { customCategories: updated }, { merge: true });
+  };
+
+  const openAddModal = () => {
+    setEditingId(null); setAmountInput(''); setInputCurrency('KRW'); setDescription(''); setNotes(''); setCategory(EventCategory.FOOD);
+    setNewDate(new Date().toISOString().split('T')[0]); setNewTime(getCurrentTime()); setIsAddingCategory(false);
+    if (members.length > 0) { setPayer(members[0].id); setSelectedSplits(members.map(m => m.id)); }
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (exp: Expense) => {
+    setEditingId(exp.id); setInputCurrency(exp.currency || 'KRW');
+    setAmountInput(exp.currency === 'KRW' ? exp.amountKRW.toString() : exp.amountTWD.toString());
+    setDescription(exp.description); setNotes(exp.notes || ''); setCategory(exp.category); setPayer(exp.payerId);
+    setSelectedSplits(exp.splitWithIds); setNewDate(exp.date); setNewTime(exp.time || '00:00');
+    setIsAddingCategory(false); setIsModalOpen(true);
+  };
+
   return (
     <div className="h-full flex flex-col no-scrollbar">
       <div className="px-6 pt-4">
         <div className="bg-slate-100 p-1 rounded-xl flex shadow-sm">
-            <button onClick={() => setActiveSubTab('list')} className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeSubTab === 'list' ? 'bg-white text-sky-400 shadow-sm' : 'text-slate-400'}`}>支出明細</button>
-            <button onClick={() => setActiveSubTab('settle')} className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeSubTab === 'settle' ? 'bg-white text-sky-400 shadow-sm' : 'text-slate-400'}`}>結算 & 統計</button>
+            <button onClick={() => { setActiveSubTab('list'); setViewingMemberDetailsId(null); }} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${activeSubTab === 'list' ? 'bg-white text-sky-400 shadow-sm' : 'text-slate-400'}`}>支出明細</button>
+            <button onClick={() => { setActiveSubTab('settle'); setViewingMemberDetailsId(null); }} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${activeSubTab === 'settle' ? 'bg-white text-sky-400 shadow-sm' : 'text-slate-400'}`}>結算 & 統計</button>
         </div>
       </div>
 
       {activeSubTab === 'list' ? (
         <div className="flex-1 overflow-y-auto px-6 pb-24 space-y-6 pt-4 no-scrollbar">
             <div className="flex justify-between items-center px-1">
-               <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">TIMELINE</h3>
+               <h3 className="text-xs font-black text-slate-300 uppercase tracking-widest">TIMELINE</h3>
                <button onClick={openAddModal} className="bg-sky-400 text-white p-2.5 rounded-xl shadow-active active:scale-90 transition-transform"><Plus size={18} strokeWidth={3}/></button>
             </div>
             {sortedDates.map(date => (
-                <div key={date} className="space-y-2">
-                    <div className="text-[10px] font-bold text-sky-400 flex items-center gap-1.5 mb-1 px-1 uppercase tracking-tighter"><Calendar size={10}/> {date}</div>
-                    <div className="space-y-2.5">
+                <div key={date} className="space-y-3">
+                    <div className="text-xs font-black text-sky-400 flex items-center gap-1.5 mb-1 px-1 uppercase tracking-tighter"><Calendar size={12}/> {date}</div>
+                    <div className="space-y-3">
                     {expensesByDate[date].map(exp => {
                       const payerM = members.find(m => m.id === exp.payerId);
                       const currentTWD = exp.currency === 'KRW' ? Math.round(exp.amountKRW * exchangeRate) : exp.amountTWD;
                       const splitMembers = members.filter(m => exp.splitWithIds.includes(m.id));
                       return (
-                          <div key={exp.id} onClick={() => openEditModal(exp)} className="bg-white py-4 px-4 rounded-2xl shadow-soft border border-slate-50 flex flex-col gap-3 cursor-pointer active:scale-[0.98] transition-all relative">
+                          <div key={exp.id} onClick={() => openEditModal(exp)} className="bg-white py-5 px-5 rounded-2xl shadow-soft border border-slate-50 flex flex-col gap-4 cursor-pointer active:scale-[0.98] transition-all relative">
                           <div className="flex justify-between items-start">
-                              <div className="flex gap-3">
-                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-slate-50 border border-slate-100 shadow-xs shrink-0">{(allCategories as any)[exp.category] || '💸'}</div>
-                                  <div>
-                                    <div className="text-sm font-bold text-slate-700 leading-tight mb-1">{exp.description}</div>
+                              <div className="flex gap-4">
+                                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-slate-50 border border-slate-100 shadow-xs shrink-0">{(allCategories as any)[exp.category] || '💸'}</div>
+                                  <div className="pt-0.5">
+                                    <div className="text-base font-bold text-slate-800 leading-tight mb-1.5">{exp.description}</div>
                                     <div className="flex items-center gap-2">
-                                       <span className="text-[9px] font-bold text-slate-400 tracking-tight">By <span className="text-sky-400">{payerM?.name}</span></span>
+                                       <span className="text-[10px] font-black text-slate-400 tracking-tight">By <span className="text-sky-400">{payerM?.name}</span></span>
                                     </div>
                                   </div>
                               </div>
-                              <div className="text-right">
-                                  <div className="flex items-center justify-end gap-1 text-[8px] font-black text-slate-300 uppercase mb-1">
-                                    <Clock size={8} /> {exp.time || '--:--'}
+                              <div className="text-right pt-0.5">
+                                  <div className="flex items-center justify-end gap-1 text-[9px] font-black text-slate-300 uppercase mb-1.5">
+                                    <Clock size={9} /> {exp.time || '--:--'}
                                   </div>
-                                  <div className="text-sm font-black text-slate-800 tracking-tight leading-none mb-0.5">₩{exp.amountKRW.toLocaleString()}</div>
-                                  <div className="text-[9px] font-black text-sky-400 uppercase tracking-tighter leading-none">NT$ {currentTWD.toLocaleString()}</div>
+                                  <div className="text-base font-black text-slate-900 tracking-tight leading-none mb-1">₩{exp.amountKRW.toLocaleString()}</div>
+                                  <div className="text-[11px] font-black text-sky-400 uppercase tracking-tighter leading-none">NT$ {currentTWD.toLocaleString()}</div>
                               </div>
                           </div>
-                          <div className="flex items-center pt-2 border-t border-slate-50">
-                              <div className="flex flex-wrap gap-1.5 flex-1">
+                          {exp.notes && (
+                            <div className="px-1 -mt-2">
+                              <p className="text-[10px] text-slate-400 italic font-medium line-clamp-1 border-l-2 border-slate-100 pl-2">{exp.notes}</p>
+                            </div>
+                          )}
+                          <div className="flex items-center pt-3 border-t border-slate-50">
+                              <div className="flex flex-wrap gap-2 flex-1">
                                   {splitMembers.map(sm => (
-                                      <img key={sm.id} src={sm.avatar} className="h-5 w-5 rounded-full ring-1 ring-slate-100 shadow-xs bg-white" alt={sm.name} />
+                                      <img key={sm.id} src={sm.avatar} className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm bg-white" alt={sm.name} />
                                   ))}
                               </div>
-                              <span className="text-[8px] font-black text-slate-200 uppercase tracking-widest pl-2 italic shrink-0">{exp.splitWithIds.length} 參與者</span>
+                              <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest pl-2 italic shrink-0">{exp.splitWithIds.length} 參與者</span>
                           </div>
                           </div>
                       );
@@ -238,8 +248,8 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
             ))}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-6 pb-24 pt-4 space-y-5 no-scrollbar">
-            {/* 結算介面 */}
+        <div className="flex-1 overflow-y-auto px-6 pb-24 pt-4 space-y-6 no-scrollbar">
+            {/* 匯率區 */}
             <div className="bg-sky-50 rounded-2xl p-5 border border-sky-100 shadow-soft">
                 <div className="flex justify-between items-center mb-4 gap-2">
                    <h4 className="text-sky-500 text-[10px] font-black tracking-tight uppercase shrink-0">匯率設定</h4>
@@ -252,26 +262,139 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                    <div className="text-slate-600 text-[10px] font-black leading-none uppercase shrink-0">TWD</div>
                 </div>
             </div>
-            <div>
-                <h3 className="text-slate-600 text-sm font-bold mb-3 px-1">統一結算報表 (TWD)</h3>
+
+            {/* 個人支出概覽 */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2 px-1">
+                    <PieChart size={14} className="text-sky-400" />
+                    <h3 className="text-slate-700 text-sm font-bold uppercase tracking-tight">個人總支出 (分擔後 TWD)</h3>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-soft border border-slate-50 divide-y divide-slate-50 overflow-hidden">
+                    {members.map(m => {
+                        const totalShare = Math.round(settlement.memberShare[m.id]);
+                        return (
+                          <div 
+                            key={m.id} 
+                            onClick={() => setViewingMemberDetailsId(m.id)}
+                            className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 transition-colors"
+                          >
+                              <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-xs"><img src={m.avatar} alt={m.name} /></div>
+                                  <div>
+                                      <div className="text-sm font-bold text-slate-700">{m.name}</div>
+                                      <div className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">點擊查看分擔詳情</div>
+                                  </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-right">
+                                  <div className="text-sm font-black text-sky-400">NT$ {totalShare.toLocaleString()}</div>
+                                  <ChevronRight size={16} className="text-slate-200" />
+                              </div>
+                          </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 結算報告 */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2 px-1">
+                    <CreditCard size={14} className="text-sky-400" />
+                    <h3 className="text-slate-700 text-sm font-bold uppercase tracking-tight">結算清單</h3>
+                </div>
                 <div className="bg-white rounded-2xl shadow-soft border border-slate-50 overflow-hidden">
                     <div className="divide-y divide-slate-50">
-                    {settlement.transactions.map((t, idx) => {
+                    {settlement.transactions.length > 0 ? settlement.transactions.map((t, idx) => {
                         const from = members.find(m => m.id === t.from), to = members.find(m => m.id === t.to);
                         return (
-                            <div key={idx} className="p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-1 flex-1">
-                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-100 shadow-xs"><img src={from?.avatar} /></div>
-                                    <div className="flex-shrink-0 px-1"><ArrowRight size={14} className="text-slate-200" /></div>
-                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-100 shadow-xs"><img src={to?.avatar} /></div>
+                            <div key={idx} className="p-4 pr-6 flex items-center justify-between bg-white">
+                                <div className="flex items-center gap-2 justify-start min-w-0">
+                                    <div className="flex flex-col items-center gap-1 w-12 shrink-0">
+                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-sm">
+                                            <img src={from?.avatar} alt={from?.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <span className="text-[9px] font-black text-slate-400 tracking-tighter truncate w-full text-center">{from?.name}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center px-1 shrink-0">
+                                        <ArrowRight size={18} className="text-sky-200" strokeWidth={3} />
+                                    </div>
+                                    
+                                    <div className="flex flex-col items-center gap-1 w-12 shrink-0">
+                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-sm">
+                                            <img src={to?.avatar} alt={to?.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <span className="text-[9px] font-black text-slate-400 tracking-tighter truncate w-full text-center">{to?.name}</span>
+                                    </div>
                                 </div>
-                                <div className="text-right ml-2">
-                                    <div className="font-black text-sky-400 text-base">NT$ {t.amount.toLocaleString()}</div>
+                                <div className="text-right ml-2 shrink-0">
+                                    <div className="text-[9px] font-black text-slate-300 mb-1 uppercase tracking-widest">應給付</div>
+                                    <div className="font-black text-sky-400 text-lg tracking-tight leading-none">NT$ {t.amount.toLocaleString()}</div>
                                 </div>
                             </div>
                         )
-                    })}
+                    }) : (
+                        <div className="p-10 text-center text-slate-200 text-xs font-bold uppercase tracking-widest italic">All settled up!</div>
+                    )}
                     </div>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* 個人支出詳情彈窗 */}
+      {viewingMemberDetailsId && viewingMember && (
+        <div className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm flex items-end justify-center">
+            <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10 overflow-hidden flex flex-col max-h-[85vh]">
+                <div className="flex justify-between items-center mb-6 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <img src={viewingMember.avatar} className="w-10 h-10 rounded-full border-2 border-sky-100" />
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800">{viewingMember.name} 的分擔詳情</h2>
+                            <p className="text-[10px] font-black text-sky-400 uppercase">總分擔金額: NT$ {Math.round(settlement.memberShare[viewingMember.id]).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setViewingMemberDetailsId(null)} className="bg-slate-50 p-2 rounded-xl text-slate-300 transition-colors active:scale-95"><X size={20}/></button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto space-y-6 no-scrollbar pb-10">
+                    {sortedMemberDates.length > 0 ? sortedMemberDates.map(date => (
+                      <div key={date} className="space-y-3">
+                         <div className="text-[10px] font-black text-sky-400 flex items-center gap-1.5 px-1 uppercase tracking-widest border-l-4 border-sky-400/30 pl-3 ml-1">{date}</div>
+                         <div className="space-y-2.5">
+                            {groupedMemberExpenses[date].map(exp => {
+                              const currentTWD = exp.currency === 'KRW' ? Math.round(exp.amountKRW * exchangeRate) : exp.amountTWD;
+                              const individualShareTWD = Math.round(currentTWD / exp.splitWithIds.length);
+                              return (
+                                <div key={exp.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col shadow-xs gap-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex gap-3 items-center min-w-0 flex-1">
+                                      <div className="w-10 h-10 rounded-xl bg-white shadow-xs flex items-center justify-center text-xl shrink-0">{(allCategories as any)[exp.category] || '💸'}</div>
+                                      <div className="min-w-0">
+                                        <div className="text-sm font-bold text-slate-700 truncate">{exp.description}</div>
+                                        <div className="text-[10px] text-slate-300 font-bold uppercase flex items-center gap-1">
+                                            <Users size={10}/> {exp.splitWithIds.length} 人分擔
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <div className="text-sm font-black text-sky-500">NT$ {individualShareTWD.toLocaleString()}</div>
+                                      <div className="text-[9px] font-bold text-slate-300">總計 ₩{exp.amountKRW.toLocaleString()}</div>
+                                    </div>
+                                  </div>
+                                  {exp.notes && (
+                                    <div className="bg-white/50 px-3 py-2 rounded-xl border border-slate-100/50">
+                                      <p className="text-[10px] text-slate-400 italic font-medium leading-relaxed">{exp.notes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                         </div>
+                      </div>
+                    )) : (
+                      <div className="py-20 text-center text-slate-200 text-xs font-bold uppercase italic">此人尚無分擔記錄</div>
+                    )}
                 </div>
             </div>
         </div>
@@ -292,7 +415,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                         </div>
                     </div>
 
-                    {/* 下拉式選單分類選擇器 */}
                     <div className="space-y-2">
                         <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">支出分類</label>
                         <div className="relative">
@@ -340,6 +462,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                     <div className="space-y-1">
                         <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">描述</label>
                         <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none focus:ring-1 focus:ring-sky-100" placeholder="這筆錢花在哪？" />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">備註 (可選)</label>
+                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none focus:ring-1 focus:ring-sky-100 min-h-[80px]" placeholder="想記錄更多細節嗎？" />
                     </div>
 
                     <div>

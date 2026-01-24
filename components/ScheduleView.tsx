@@ -120,10 +120,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
             }`}
           >
             {d.val === 'PRE_TRIP' ? (
-              <>
-                <span className="text-[7px] font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">PRE</span>
+              <div className="flex flex-col items-center w-full px-1">
+                <span className="text-[8px] font-black text-slate-400 mb-0.5 uppercase tracking-normal w-full text-center">PRE</span>
                 <span className="text-base leading-none text-sky-400">📝</span>
-              </>
+              </div>
             ) : (
               <>
                 <span className="text-[7px] font-bold text-slate-400 mb-0.5 uppercase tracking-tighter">DAY</span>
