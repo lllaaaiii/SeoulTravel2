@@ -86,12 +86,12 @@ const App: React.FC = () => {
            </div>
         </div>
         
-        {/* 去背效果 Cover Image - 尺寸放大，使用混合模式與濾鏡 */}
-        <div className="w-44 h-24 shrink-0 relative flex items-center justify-center overflow-visible -my-4">
+        {/* 去背效果 Cover Image - 尺寸微縮，維持立體貼紙感 */}
+        <div className="w-36 h-20 shrink-0 relative flex items-center justify-center overflow-visible -my-2">
           <img 
             src={coverImage} 
             alt="Cover" 
-            className="h-full w-auto object-contain mix-blend-multiply filter drop-shadow-[0_8px_12px_rgba(0,0,0,0.15)] transition-transform duration-500 hover:scale-110 active:scale-95" 
+            className="h-full w-auto object-contain mix-blend-multiply filter drop-shadow-[0_6px_10px_rgba(0,0,0,0.12)] transition-transform duration-500 hover:scale-110 active:scale-95" 
           />
         </div>
 
