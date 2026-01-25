@@ -114,7 +114,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
         amountKRW = Math.round(inputTotal / safeRate);
     }
     
-    // Firestore 不支援 undefined 值，故使用 null 或不傳入
     const data: any = { 
       amountKRW, 
       amountTWD, 
@@ -132,7 +131,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
     if (finalCustomSplits !== null) {
       data.customSplits = finalCustomSplits;
     } else if (editingId) {
-      // 如果原本有自定義現在取消了，需將其設為 null
       data.customSplits = null;
     }
 
@@ -277,7 +275,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                           <div className="flex items-center pt-3 border-t border-slate-50">
                               <div className="flex flex-wrap gap-2 flex-1">
                                   {splitMembers.map(sm => (
-                                      <img key={sm.id} src={sm.avatar} className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm bg-white" alt={sm.name} />
+                                      <img key={sm.id} src={sm.avatar} className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm bg-white object-cover" alt={sm.name} />
                                   ))}
                               </div>
                               <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest pl-2 italic shrink-0">{exp.splitWithIds.length} 參與者</span>
@@ -294,6 +292,14 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
             <div className="bg-sky-50 rounded-2xl p-5 border border-sky-100 shadow-soft">
                 <div className="flex justify-between items-center mb-4 gap-2">
                    <h4 className="text-sky-500 text-[10px] font-black tracking-tight uppercase shrink-0">匯率設定</h4>
+                   <a 
+                    href="https://rate.bot.com.tw/xrt?Lang=zh-TW" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[9px] font-black text-sky-400/70 hover:text-sky-400 transition-colors uppercase bg-white/60 px-2 py-1 rounded-lg border border-sky-400/10"
+                   >
+                     <Landmark size={10} /> 查看台銀牌告 <ExternalLink size={8} />
+                   </a>
                 </div>
                 <div className="flex items-center gap-2">
                    <div className="text-slate-600 text-[10px] font-black leading-none uppercase shrink-0">1 KRW ≈</div>
@@ -307,7 +313,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
             <div className="space-y-3">
                 <div className="flex items-center gap-2 px-1">
                     <PieChart size={14} className="text-sky-400" />
-                    <h3 className="text-slate-700 text-sm font-bold uppercase tracking-tight">個人總支出 (分擔後 TWD)</h3>
+                    <h3 className="text-slate-700 text-sm font-bold uppercase tracking-tight">個人總支出 (TWD)</h3>
                 </div>
                 <div className="bg-white rounded-2xl shadow-soft border border-slate-50 divide-y divide-slate-50 overflow-hidden">
                     {members.map(m => {
@@ -315,10 +321,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                         return (
                           <div key={m.id} onClick={() => setViewingMemberDetailsId(m.id)} className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 transition-colors">
                               <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-xs"><img src={m.avatar} alt={m.name} /></div>
+                                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-xs"><img src={m.avatar} alt={m.name} className="w-full h-full object-cover" /></div>
                                   <div>
                                       <div className="text-sm font-bold text-slate-700">{m.name}</div>
-                                      <div className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">點擊查看分擔詳情</div>
+                                      <div className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">點擊查看支出詳情</div>
                                   </div>
                               </div>
                               <div className="flex items-center gap-2 text-right">
@@ -373,10 +379,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
             <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10 overflow-hidden flex flex-col max-h-[85vh]">
                 <div className="flex justify-between items-center mb-6 shrink-0">
                     <div className="flex items-center gap-3">
-                        <img src={viewingMember.avatar} className="w-10 h-10 rounded-full border-2 border-sky-100" />
+                        <img src={viewingMember.avatar} className="w-10 h-10 rounded-full border-2 border-sky-100 object-cover" alt={viewingMember.name} />
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800">{viewingMember.name} 的分擔詳情</h2>
-                            <p className="text-[10px] font-black text-sky-400 uppercase">總分擔額: NT$ {Math.round(settlement.memberShare[viewingMember.id]).toLocaleString()}</p>
+                            <h2 className="text-lg font-bold text-slate-800">{viewingMember.name} 的支出詳情</h2>
+                            <p className="text-[10px] font-black text-sky-400 uppercase">總支出額: NT$ {Math.round(settlement.memberShare[viewingMember.id]).toLocaleString()}</p>
                         </div>
                     </div>
                     <button onClick={() => setViewingMemberDetailsId(null)} className="bg-slate-50 p-2 rounded-xl text-slate-300 transition-colors active:scale-95"><X size={20}/></button>
@@ -484,7 +490,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                                             else setSelectedSplits([...selectedSplits, m.id]);
                                         }} className="flex items-center gap-2 flex-1 min-w-0">
                                             <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 relative ${isSel ? 'border-sky-400 shadow-active' : 'border-white shadow-xs'}`}>
-                                                <img src={m.avatar} className="w-full h-full rounded-full object-cover" />
+                                                <img src={m.avatar} className="w-full h-full rounded-full object-cover" alt={m.name} />
                                                 {isSel && <div className="absolute inset-0 bg-sky-400/20 flex items-center justify-center rounded-full"><Check size={14} className="text-white drop-shadow-md" strokeWidth={4} /></div>}
                                             </div>
                                             <span className={`text-xs font-bold truncate ${isSel ? 'text-sky-500' : 'text-slate-500'}`}>{m.name}</span>
