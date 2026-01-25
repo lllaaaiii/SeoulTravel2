@@ -15,20 +15,22 @@ export const MEMBERS: Member[] = [
   { id: 'm5', name: '旅伴D', color: 'bg-indigo-400', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma' },
 ];
 
-export const CATEGORY_COLORS: Record<EventCategory, string> = {
-  [EventCategory.SIGHTSEEING]: 'bg-sky-50 text-sky-500 border-sky-100',
-  [EventCategory.FOOD]: 'bg-rose-50 text-rose-500 border-rose-100',
-  [EventCategory.TRANSPORT]: 'bg-slate-50 text-slate-500 border-slate-100',
-  [EventCategory.STAY]: 'bg-indigo-50 text-indigo-500 border-indigo-100',
-  [EventCategory.SHOPPING]: 'bg-amber-50 text-amber-500 border-amber-100',
+export const CATEGORY_COLORS: Record<string, string> = {
+  [EventCategory.SIGHTSEEING]: 'bg-sky-50 text-sky-400 border-sky-100',
+  [EventCategory.FOOD]: 'bg-rose-50 text-rose-400 border-rose-100',
+  [EventCategory.TRANSPORT]: 'bg-slate-50 text-slate-400 border-slate-100',
+  [EventCategory.STAY]: 'bg-indigo-50 text-indigo-400 border-indigo-100',
+  [EventCategory.SHOPPING]: 'bg-amber-50 text-amber-400 border-amber-100',
+  [EventCategory.STAR]: 'bg-purple-50 text-purple-400 border-purple-100',
 };
 
-export const CATEGORY_ICONS: Record<EventCategory, string> = {
+export const CATEGORY_ICONS: Record<string, string> = {
   [EventCategory.SIGHTSEEING]: '🎡',
   [EventCategory.FOOD]: '🍜',
   [EventCategory.TRANSPORT]: '✈️',
   [EventCategory.STAY]: '🏨',
   [EventCategory.SHOPPING]: '🛍️',
+  [EventCategory.STAR]: '🌟',
 };
 
 export const MOCK_EVENTS: ScheduleEvent[] = [];

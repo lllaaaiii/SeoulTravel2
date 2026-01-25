@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { ScheduleEvent, EventCategory, PreTripTask, Member } from '../types';
 import { CATEGORY_COLORS, CATEGORY_ICONS } from '../constants';
-import { MapPin, Info, Plus, X, Check, Trash2, Plane } from 'lucide-react';
+import { MapPin, Info, Plus, X, Check, Trash2, Plane, ChevronDown } from 'lucide-react';
 import { db } from '../services/firebase';
-import { collection, query, onSnapshot, addDoc, deleteDoc, updateDoc, doc, arrayUnion, arrayRemove, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, deleteDoc, updateDoc, doc, arrayUnion, arrayRemove, orderBy, getDoc, setDoc } from 'firebase/firestore';
 
 interface ScheduleViewProps {
   members: Member[];
@@ -25,12 +25,42 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
   const [selectedDate, setSelectedDate] = useState(dates[1].val);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [preTripTasks, setPreTripTasks] = useState<PreTripTask[]>([]);
+  
+  // 自定義分類相關狀態
+  const [customCategories, setCustomCategories] = useState<Record<string, string>>({});
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatEmoji, setNewCatEmoji] = useState('📍');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newLocation, setNewLocation] = useState('');
-  const [newCategory, setNewCategory] = useState<EventCategory>(EventCategory.SIGHTSEEING);
+  const [newCategory, setNewCategory] = useState<string>(EventCategory.SIGHTSEEING);
   const [newNotes, setNewNotes] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  // 獲取自定義分類
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const configDoc = await getDoc(doc(db, 'config', 'scheduleSettings'));
+        if (configDoc.exists()) {
+          if (configDoc.data().customCategories) setCustomCategories(configDoc.data().customCategories);
+        }
+      } catch (e) { console.warn("Fetch schedule settings error:", e); }
+    };
+    fetchConfig();
+  }, []);
+
+  const handleAddNewCategory = async () => {
+    if (!newCatName.trim()) return;
+    const updated = { ...customCategories, [newCatName.trim()]: newCatEmoji };
+    setCustomCategories(updated);
+    setIsAddingCategory(false);
+    await setDoc(doc(db, 'config', 'scheduleSettings'), { customCategories: updated }, { merge: true });
+    setNewCategory(newCatName.trim());
+    setNewCatName('');
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'events'));
@@ -101,6 +131,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
       }
     }
   }
+
+  const allCategoryIcons = { ...CATEGORY_ICONS, ...customCategories };
+  const allCategoryColors = { ...CATEGORY_COLORS };
+
+  const getCategoryIcon = (cat: string) => (allCategoryIcons as any)[cat] || '📍';
+  const getCategoryColorClass = (cat: string) => (allCategoryColors as any)[cat] || 'bg-slate-50 text-slate-400 border-slate-100';
 
   const filteredEvents = events
     .filter(e => e.date === selectedDate)
@@ -264,8 +300,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                     className="bg-white rounded-[20px] p-4 shadow-soft border border-slate-50 active:scale-[0.98] transition-all relative group"
                 >
                     <div className="flex justify-between items-start mb-2">
-                        <div className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${CATEGORY_COLORS[event.category].replace('text-sky-500', 'text-sky-400')}`}>
-                            {CATEGORY_ICONS[event.category]} {event.category}
+                        <div className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${getCategoryColorClass(event.category).replace('text-sky-400', 'text-sky-400')}`}>
+                            {getCategoryIcon(event.category)} {event.category}
                         </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
@@ -288,7 +324,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
 
       {isModalOpen && selectedDate !== 'PRE_TRIP' && (
         <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm flex items-end justify-center">
-           <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10">
+           <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10 overflow-y-auto max-h-[90vh]">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-800">{editingId ? '編輯行程' : '新增行程'}</h2>
                 <button onClick={() => setIsModalOpen(false)} className="text-slate-300 text-xl">✕</button>
@@ -297,14 +333,51 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                  <div>
                     <input type="text" placeholder="目的地名稱" value={newLocation} onChange={e => setNewLocation(e.target.value)} className="w-full text-lg font-bold py-3 border-b-2 border-slate-50 focus:border-sky-400 outline-none transition-colors" required />
                  </div>
-                 <div className="grid grid-cols-3 gap-2">
-                    {Object.values(EventCategory).map(cat => (
-                        <button key={cat} type="button" onClick={() => setNewCategory(cat)} className={`py-2 rounded-xl text-[10px] font-bold border transition-all ${newCategory === cat ? 'bg-sky-400 text-white border-sky-400 shadow-active' : 'bg-slate-50 text-slate-400 border-transparent'}`}>
-                          {CATEGORY_ICONS[cat]} {cat}
-                        </button>
-                    ))}
+                 
+                 <div className="space-y-2">
+                    <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">行程分類</label>
+                    <div className="relative">
+                        <select 
+                            value={newCategory} 
+                            onChange={(e) => {
+                                if (e.target.value === 'ADD_NEW') { setIsAddingCategory(true); } 
+                                else { setNewCategory(e.target.value); setIsAddingCategory(false); }
+                            }}
+                            className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold text-slate-700 border-none outline-none appearance-none pr-10 focus:ring-1 focus:ring-sky-100"
+                        >
+                            {Object.entries(CATEGORY_ICONS).map(([name, emoji]) => (
+                                <option key={name} value={name}>{emoji} {name}</option>
+                            ))}
+                            {Object.entries(customCategories).map(([name, emoji]) => (
+                                <option key={name} value={name}>{emoji} {name}</option>
+                            ))}
+                            <option value="ADD_NEW" className="text-sky-400 font-bold">+ 新增自定義分類...</option>
+                        </select>
+                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
+                    </div>
                  </div>
+
+                 {isAddingCategory && (
+                    <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex gap-2">
+                            <div className="flex-1">
+                                <label className="text-[8px] font-bold text-purple-400 mb-1 block">分類名稱</label>
+                                <input type="text" placeholder="例: 練舞" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="w-full p-2 bg-white rounded-lg text-xs font-bold outline-none border border-purple-100 focus:border-purple-300" />
+                            </div>
+                            <div className="w-12">
+                                <label className="text-[8px] font-bold text-purple-400 mb-1 block">圖示</label>
+                                <input type="text" placeholder="💃" value={newCatEmoji} onChange={e => setNewCatEmoji(e.target.value)} className="w-full p-2 bg-white rounded-lg text-center text-xs outline-none border border-purple-100" />
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setIsAddingCategory(false)} className="flex-1 py-1.5 bg-white text-slate-400 text-[10px] font-bold rounded-lg border border-slate-100">取消</button>
+                            <button onClick={handleAddNewCategory} className="flex-1 py-1.5 bg-sky-400 text-white text-[10px] font-bold rounded-lg shadow-sm">新增分類</button>
+                        </div>
+                    </div>
+                 )}
+
                  <textarea placeholder="有些備註想記錄嗎？" value={newNotes} onChange={e => setNewNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl h-24 outline-none focus:ring-1 focus:ring-sky-200 text-xs font-bold text-slate-600" />
+                 
                  <div className="flex gap-3 pt-4">
                      {editingId && (
                          <button type="button" onClick={() => handleDeleteEvent()} className="px-5 py-4 bg-rose-50 text-rose-500 font-bold rounded-2xl active:scale-95 transition-all">

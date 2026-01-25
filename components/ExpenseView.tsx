@@ -15,7 +15,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [exchangeRate, setExchangeRate] = useState<number>(0.0245);
   
-  // 用於顯示個人支出細項的 Modal 狀態
   const [viewingMemberDetailsId, setViewingMemberDetailsId] = useState<string | null>(null);
 
   const [customCategories, setCustomCategories] = useState<Record<string, string>>({});
@@ -29,10 +28,12 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   const [amountInput, setAmountInput] = useState('');
   const [inputCurrency, setInputCurrency] = useState<'KRW' | 'TWD'>('KRW');
   const [description, setDescription] = useState('');
-  const [notes, setNotes] = useState(''); // 新增備註狀態
+  const [notes, setNotes] = useState('');
   const [category, setCategory] = useState<string>(EventCategory.FOOD);
   const [payer, setPayer] = useState('');
   const [selectedSplits, setSelectedSplits] = useState<string[]>([]);
+  const [customSplits, setCustomSplits] = useState<Record<string, string>>({});
+  const [isCustomSplit, setIsCustomSplit] = useState(false);
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [newTime, setNewTime] = useState('');
 
@@ -83,28 +84,57 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   const allCategories = { ...CATEGORY_ICONS, ...customCategories };
 
   const handleSave = async () => {
-    const inputVal = parseFloat(amountInput);
-    if (!amountInput || isNaN(inputVal) || !description.trim()) { alert("請輸入金額與描述！"); return; }
+    const inputTotal = parseFloat(amountInput);
+    if (!amountInput || isNaN(inputTotal) || !description.trim()) { alert("請輸入金額與描述！"); return; }
     if (selectedSplits.length === 0) { alert("請選擇分帳人！"); return; }
     
+    let finalCustomSplits: Record<string, number> | null = null;
+    if (isCustomSplit) {
+      let sum = 0;
+      finalCustomSplits = {};
+      for (const id of selectedSplits) {
+        const val = parseFloat(customSplits[id] || '0');
+        finalCustomSplits[id] = val;
+        sum += val;
+      }
+      if (Math.abs(sum - inputTotal) > 0.1) {
+        alert(`自定義金額總和 (${sum}) 不等於總額 (${inputTotal})！`);
+        return;
+      }
+    }
+
     let amountKRW = 0, amountTWD = 0;
     const safeRate = exchangeRate || 0.0245;
 
     if (inputCurrency === 'KRW') {
-        amountKRW = Math.round(inputVal);
-        amountTWD = Math.round(inputVal * safeRate);
+        amountKRW = Math.round(inputTotal);
+        amountTWD = Math.round(inputTotal * safeRate);
     } else {
-        amountTWD = Math.round(inputVal);
-        amountKRW = Math.round(inputVal / safeRate);
+        amountTWD = Math.round(inputTotal);
+        amountKRW = Math.round(inputTotal / safeRate);
     }
     
-    const data = { 
-      amountKRW, amountTWD, currency: inputCurrency, category, 
+    // Firestore 不支援 undefined 值，故使用 null 或不傳入
+    const data: any = { 
+      amountKRW, 
+      amountTWD, 
+      currency: inputCurrency, 
+      category, 
       description: description.trim(), 
-      notes: notes.trim(), // 包含備註
-      payerId: payer, splitWithIds: selectedSplits, 
-      date: newDate, time: newTime || '00:00', timestamp: new Date().toISOString() 
+      notes: notes.trim(),
+      payerId: payer, 
+      splitWithIds: selectedSplits, 
+      date: newDate, 
+      time: newTime || '00:00', 
+      timestamp: new Date().toISOString() 
     };
+
+    if (finalCustomSplits !== null) {
+      data.customSplits = finalCustomSplits;
+    } else if (editingId) {
+      // 如果原本有自定義現在取消了，需將其設為 null
+      data.customSplits = null;
+    }
 
     if (editingId) await updateDoc(doc(db, 'expenses', editingId), data);
     else await addDoc(collection(db, 'expenses'), data);
@@ -119,10 +149,20 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
     expenses.forEach(exp => {
         const currentTWD = exp.currency === 'KRW' ? Math.round(exp.amountKRW * exchangeRate) : exp.amountTWD;
         memberPaid[exp.payerId] += currentTWD;
-        const splitCount = exp.splitWithIds.length;
-        if (splitCount > 0) {
-            const share = currentTWD / splitCount;
-            exp.splitWithIds.forEach(id => { if (memberShare[id] !== undefined) { memberShare[id] += share; } });
+        
+        if (exp.customSplits && Object.keys(exp.customSplits).length > 0) {
+          (Object.entries(exp.customSplits) as [string, number][]).forEach(([id, amt]) => {
+            if (memberShare[id] !== undefined) {
+              const shareTWD = exp.currency === 'KRW' ? amt * exchangeRate : amt;
+              memberShare[id] += shareTWD;
+            }
+          });
+        } else {
+          const splitCount = exp.splitWithIds.length;
+          if (splitCount > 0) {
+              const share = currentTWD / splitCount;
+              exp.splitWithIds.forEach(id => { if (memberShare[id] !== undefined) { memberShare[id] += share; } });
+          }
         }
     });
 
@@ -150,8 +190,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   const sortedDates = Object.keys(expensesByDate).sort((a, b) => b.localeCompare(a));
 
   const viewingMember = members.find(m => m.id === viewingMemberDetailsId);
-
-  // 彈窗細項日期分組邏輯
   const groupedMemberExpenses: Record<string, Expense[]> = {};
   if (viewingMember) {
     expenses.filter(e => e.splitWithIds.includes(viewingMember.id)).forEach(exp => {
@@ -161,17 +199,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   }
   const sortedMemberDates = Object.keys(groupedMemberExpenses).sort((a, b) => b.localeCompare(a));
 
-  const handleAddNewCategory = async () => {
-    if (!newCatName.trim()) return;
-    const updated = { ...customCategories, [newCatName.trim()]: newCatEmoji };
-    setCustomCategories(updated);
-    setIsAddingCategory(false);
-    await setDoc(doc(db, 'config', 'settings'), { customCategories: updated }, { merge: true });
-  };
-
   const openAddModal = () => {
     setEditingId(null); setAmountInput(''); setInputCurrency('KRW'); setDescription(''); setNotes(''); setCategory(EventCategory.FOOD);
     setNewDate(new Date().toISOString().split('T')[0]); setNewTime(getCurrentTime()); setIsAddingCategory(false);
+    setIsCustomSplit(false); setCustomSplits({});
     if (members.length > 0) { setPayer(members[0].id); setSelectedSplits(members.map(m => m.id)); }
     setIsModalOpen(true);
   };
@@ -181,7 +212,17 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
     setAmountInput(exp.currency === 'KRW' ? exp.amountKRW.toString() : exp.amountTWD.toString());
     setDescription(exp.description); setNotes(exp.notes || ''); setCategory(exp.category); setPayer(exp.payerId);
     setSelectedSplits(exp.splitWithIds); setNewDate(exp.date); setNewTime(exp.time || '00:00');
-    setIsAddingCategory(false); setIsModalOpen(true);
+    setIsAddingCategory(false);
+    if (exp.customSplits) {
+      setIsCustomSplit(true);
+      const stringifiedSplits: Record<string, string> = {};
+      Object.entries(exp.customSplits).forEach(([id, val]) => { stringifiedSplits[id] = val.toString(); });
+      setCustomSplits(stringifiedSplits);
+    } else {
+      setIsCustomSplit(false);
+      setCustomSplits({});
+    }
+    setIsModalOpen(true);
   };
 
   return (
@@ -210,16 +251,17 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                       return (
                           <div key={exp.id} onClick={() => openEditModal(exp)} className="bg-white py-5 px-5 rounded-2xl shadow-soft border border-slate-50 flex flex-col gap-4 cursor-pointer active:scale-[0.98] transition-all relative">
                           <div className="flex justify-between items-start">
-                              <div className="flex gap-4">
+                              <div className="flex gap-4 min-w-0">
                                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-slate-50 border border-slate-100 shadow-xs shrink-0">{(allCategories as any)[exp.category] || '💸'}</div>
-                                  <div className="pt-0.5">
-                                    <div className="text-base font-bold text-slate-800 leading-tight mb-1.5">{exp.description}</div>
+                                  <div className="pt-0.5 min-w-0">
+                                    <div className="text-base font-bold text-slate-800 leading-tight mb-1.5 truncate">{exp.description}</div>
                                     <div className="flex items-center gap-2">
                                        <span className="text-[10px] font-black text-slate-400 tracking-tight">By <span className="text-sky-400">{payerM?.name}</span></span>
+                                       {exp.customSplits && <span className="text-[8px] bg-amber-50 text-amber-500 px-1.5 py-0.5 rounded font-black border border-amber-100 uppercase tracking-tighter">Custom</span>}
                                     </div>
                                   </div>
                               </div>
-                              <div className="text-right pt-0.5">
+                              <div className="text-right pt-0.5 shrink-0">
                                   <div className="flex items-center justify-end gap-1 text-[9px] font-black text-slate-300 uppercase mb-1.5">
                                     <Clock size={9} /> {exp.time || '--:--'}
                                   </div>
@@ -249,7 +291,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-6 pb-24 pt-4 space-y-6 no-scrollbar">
-            {/* 匯率區 */}
             <div className="bg-sky-50 rounded-2xl p-5 border border-sky-100 shadow-soft">
                 <div className="flex justify-between items-center mb-4 gap-2">
                    <h4 className="text-sky-500 text-[10px] font-black tracking-tight uppercase shrink-0">匯率設定</h4>
@@ -263,22 +304,16 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                 </div>
             </div>
 
-            {/* 個人支出概覽 */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2 px-1">
                     <PieChart size={14} className="text-sky-400" />
                     <h3 className="text-slate-700 text-sm font-bold uppercase tracking-tight">個人總支出 (分擔後 TWD)</h3>
                 </div>
-
                 <div className="bg-white rounded-2xl shadow-soft border border-slate-50 divide-y divide-slate-50 overflow-hidden">
                     {members.map(m => {
                         const totalShare = Math.round(settlement.memberShare[m.id]);
                         return (
-                          <div 
-                            key={m.id} 
-                            onClick={() => setViewingMemberDetailsId(m.id)}
-                            className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 transition-colors"
-                          >
+                          <div key={m.id} onClick={() => setViewingMemberDetailsId(m.id)} className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50 transition-colors">
                               <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-xs"><img src={m.avatar} alt={m.name} /></div>
                                   <div>
@@ -296,7 +331,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                 </div>
             </div>
 
-            {/* 結算報告 */}
             <div className="space-y-3">
                 <div className="flex items-center gap-2 px-1">
                     <CreditCard size={14} className="text-sky-400" />
@@ -310,20 +344,12 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                             <div key={idx} className="p-4 pr-6 flex items-center justify-between bg-white">
                                 <div className="flex items-center gap-2 justify-start min-w-0">
                                     <div className="flex flex-col items-center gap-1 w-12 shrink-0">
-                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-sm">
-                                            <img src={from?.avatar} alt={from?.name} className="w-full h-full object-cover" />
-                                        </div>
+                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-sm"><img src={from?.avatar} alt={from?.name} className="w-full h-full object-cover" /></div>
                                         <span className="text-[9px] font-black text-slate-400 tracking-tighter truncate w-full text-center">{from?.name}</span>
                                     </div>
-                                    
-                                    <div className="flex items-center px-1 shrink-0">
-                                        <ArrowRight size={18} className="text-sky-200" strokeWidth={3} />
-                                    </div>
-                                    
+                                    <div className="flex items-center px-1 shrink-0"><ArrowRight size={18} className="text-sky-200" strokeWidth={3} /></div>
                                     <div className="flex flex-col items-center gap-1 w-12 shrink-0">
-                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-sm">
-                                            <img src={to?.avatar} alt={to?.name} className="w-full h-full object-cover" />
-                                        </div>
+                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100 shadow-sm"><img src={to?.avatar} alt={to?.name} className="w-full h-full object-cover" /></div>
                                         <span className="text-[9px] font-black text-slate-400 tracking-tighter truncate w-full text-center">{to?.name}</span>
                                     </div>
                                 </div>
@@ -342,7 +368,6 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
         </div>
       )}
 
-      {/* 個人支出詳情彈窗 */}
       {viewingMemberDetailsId && viewingMember && (
         <div className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm flex items-end justify-center">
             <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10 overflow-hidden flex flex-col max-h-[85vh]">
@@ -351,7 +376,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                         <img src={viewingMember.avatar} className="w-10 h-10 rounded-full border-2 border-sky-100" />
                         <div>
                             <h2 className="text-lg font-bold text-slate-800">{viewingMember.name} 的分擔詳情</h2>
-                            <p className="text-[10px] font-black text-sky-400 uppercase">總分擔金額: NT$ {Math.round(settlement.memberShare[viewingMember.id]).toLocaleString()}</p>
+                            <p className="text-[10px] font-black text-sky-400 uppercase">總分擔額: NT$ {Math.round(settlement.memberShare[viewingMember.id]).toLocaleString()}</p>
                         </div>
                     </div>
                     <button onClick={() => setViewingMemberDetailsId(null)} className="bg-slate-50 p-2 rounded-xl text-slate-300 transition-colors active:scale-95"><X size={20}/></button>
@@ -364,7 +389,12 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                          <div className="space-y-2.5">
                             {groupedMemberExpenses[date].map(exp => {
                               const currentTWD = exp.currency === 'KRW' ? Math.round(exp.amountKRW * exchangeRate) : exp.amountTWD;
-                              const individualShareTWD = Math.round(currentTWD / exp.splitWithIds.length);
+                              let individualShareTWD = 0;
+                              if (exp.customSplits && exp.customSplits[viewingMember.id] !== undefined) {
+                                individualShareTWD = exp.currency === 'KRW' ? Math.round(exp.customSplits[viewingMember.id] * exchangeRate) : Math.round(exp.customSplits[viewingMember.id]);
+                              } else {
+                                individualShareTWD = Math.round(currentTWD / exp.splitWithIds.length);
+                              }
                               return (
                                 <div key={exp.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col shadow-xs gap-3">
                                   <div className="flex items-center justify-between">
@@ -373,7 +403,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                                       <div className="min-w-0">
                                         <div className="text-sm font-bold text-slate-700 truncate">{exp.description}</div>
                                         <div className="text-[10px] text-slate-300 font-bold uppercase flex items-center gap-1">
-                                            <Users size={10}/> {exp.splitWithIds.length} 人分擔
+                                            <Users size={10}/> {exp.splitWithIds.length} 人分擔 {exp.customSplits && "· 自定義"}
                                         </div>
                                       </div>
                                     </div>
@@ -400,12 +430,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
         </div>
       )}
 
-      {/* 新增/編輯彈窗 */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm flex items-end justify-center">
             <div className="bg-white w-full max-w-md rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom-10 overflow-y-auto max-h-[90vh]">
                 <div className="flex justify-between items-center mb-6"><h2 className="text-lg font-bold text-slate-800">{editingId ? '編輯款項' : '新增支出'}</h2><button onClick={() => setIsModalOpen(false)} className="text-slate-300 text-xl">✕</button></div>
-                
                 <div className="space-y-4">
                     <div className="flex gap-3 items-end bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div className="flex-1 min-w-0"><label className="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1 block px-1">金額</label><input type="number" value={amountInput} onChange={(e) => setAmountInput(e.target.value)} className="w-full text-2xl font-bold text-slate-800 bg-transparent outline-none" placeholder="0" /></div>
@@ -414,89 +442,72 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                              <button onClick={() => setInputCurrency('TWD')} className={`px-2 py-1 rounded-lg text-[9px] font-bold transition-all ${inputCurrency === 'TWD' ? 'bg-sky-400 text-white' : 'text-slate-400'}`}>TWD</button>
                         </div>
                     </div>
-
+                    
                     <div className="space-y-2">
                         <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">支出分類</label>
                         <div className="relative">
-                            <select 
-                                value={category} 
-                                onChange={(e) => {
-                                    if (e.target.value === 'ADD_NEW') { setIsAddingCategory(true); } 
-                                    else { setCategory(e.target.value); setIsAddingCategory(false); }
-                                }}
-                                className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold text-slate-700 border-none outline-none appearance-none pr-10 focus:ring-1 focus:ring-sky-100"
-                            >
-                                {Object.entries(allCategories).map(([name, emoji]) => (
-                                    <option key={name} value={name}>{emoji} {name}</option>
-                                ))}
+                            <select value={category} onChange={(e) => { if (e.target.value === 'ADD_NEW') { setIsAddingCategory(true); } else { setCategory(e.target.value); setIsAddingCategory(false); } }} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold text-slate-700 border-none outline-none appearance-none pr-10 focus:ring-1 focus:ring-sky-100">
+                                {Object.entries(allCategories).map(([name, emoji]) => (<option key={name} value={name}>{emoji} {name}</option>))}
                                 <option value="ADD_NEW" className="text-sky-400 font-bold">+ 新增自定義分類...</option>
                             </select>
                             <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
                         </div>
                     </div>
 
-                    {isAddingCategory && (
-                        <div className="p-4 bg-sky-50 rounded-2xl border border-sky-100 space-y-3 animate-in fade-in zoom-in-95 duration-200">
-                            <div className="flex gap-2">
-                                <div className="flex-1">
-                                    <label className="text-[8px] font-bold text-sky-400 mb-1 block">分類名稱</label>
-                                    <input type="text" placeholder="例: 甜點" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="w-full p-2 bg-white rounded-lg text-xs font-bold outline-none border border-sky-100 focus:border-sky-300" />
-                                </div>
-                                <div className="w-12">
-                                    <label className="text-[8px] font-bold text-sky-400 mb-1 block">圖示</label>
-                                    <input type="text" placeholder="🍔" value={newCatEmoji} onChange={e => setNewCatEmoji(e.target.value)} className="w-full p-2 bg-white rounded-lg text-center text-xs outline-none border border-sky-100" />
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => setIsAddingCategory(false)} className="flex-1 py-1.5 bg-white text-slate-400 text-[10px] font-bold rounded-lg border border-slate-100">取消</button>
-                                <button onClick={handleAddNewCategory} className="flex-1 py-1.5 bg-sky-400 text-white text-[10px] font-bold rounded-lg shadow-sm">新增分類</button>
-                            </div>
-                        </div>
-                    )}
-
                     <div className="grid grid-cols-2 gap-3">
                         <div><label className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1 block ml-1">日期</label><input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none" /></div>
                         <div><label className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1 block ml-1">時間</label><input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none" /></div>
                     </div>
                     
-                    <div className="space-y-1">
-                        <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">描述</label>
-                        <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none focus:ring-1 focus:ring-sky-100" placeholder="這筆錢花在哪？" />
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">備註 (可選)</label>
-                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none focus:ring-1 focus:ring-sky-100 min-h-[80px]" placeholder="想記錄更多細節嗎？" />
-                    </div>
+                    <div className="space-y-1"><label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">描述</label><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none focus:ring-1 focus:ring-sky-100" placeholder="這筆錢花在哪？" /></div>
+                    <div className="space-y-1"><label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">備註 (可選)</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none focus:ring-1 focus:ring-sky-100 min-h-[60px]" placeholder="想記錄更多細節嗎？" /></div>
 
                     <div>
                         <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-2 block ml-1">誰付錢？</label>
-                        <div className="grid grid-cols-5 gap-2">
-                            {members.map(m => (
-                                <button key={m.id} onClick={() => setPayer(m.id)} className={`flex flex-col items-center gap-1 transition-all ${payer === m.id ? 'scale-105' : 'opacity-40 grayscale'}`}>
-                                    <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 ${payer === m.id ? 'border-sky-400 shadow-active' : 'border-white bg-white shadow-xs'}`}><img src={m.avatar} className="w-full h-full rounded-full object-cover" /></div>
-                                    <span className={`text-[8px] font-bold truncate w-full text-center ${payer === m.id ? 'text-sky-400' : 'text-slate-500'}`}>{m.name}</span>
-                                </button>
-                            ))}
-                        </div>
+                        <div className="grid grid-cols-5 gap-2">{members.map(m => (<button key={m.id} onClick={() => setPayer(m.id)} className={`flex flex-col items-center gap-1 transition-all ${payer === m.id ? 'scale-105' : 'opacity-40 grayscale'}`}><div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 ${payer === m.id ? 'border-sky-400 shadow-active' : 'border-white bg-white shadow-xs'}`}><img src={m.avatar} className="w-full h-full rounded-full object-cover" /></div><span className={`text-[8px] font-bold truncate w-full text-center ${payer === m.id ? 'text-sky-400' : 'text-slate-500'}`}>{m.name}</span></button>))}</div>
                     </div>
 
                     <div>
-                        <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-2 block ml-1">分帳人</label>
-                        <div className="grid grid-cols-5 gap-2">
+                        <div className="flex justify-between items-center mb-2 px-1">
+                            <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest">分帳人與金額</label>
+                            <button type="button" onClick={() => setIsCustomSplit(!isCustomSplit)} className={`text-[9px] font-black px-2 py-0.5 rounded-full border transition-all ${isCustomSplit ? 'bg-amber-400 text-white border-amber-500' : 'text-slate-400 border-slate-200'}`}>
+                                {isCustomSplit ? '自定義金額' : '平均分帳'}
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
                             {members.map(m => {
                                 const isSel = selectedSplits.includes(m.id);
                                 return (
-                                    <button key={m.id} onClick={() => {
-                                      if (isSel) { if (selectedSplits.length > 1) setSelectedSplits(selectedSplits.filter(s => s !== m.id)); } 
-                                      else setSelectedSplits([...selectedSplits, m.id]);
-                                    }} className={`flex flex-col items-center gap-1 transition-all ${isSel ? 'scale-105' : 'opacity-40 grayscale'}`}>
-                                        <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 relative transition-all ${isSel ? 'border-sky-400 shadow-active' : 'border-white bg-white shadow-xs'}`}>
-                                            <img src={m.avatar} className="w-full h-full rounded-full object-cover" />
-                                            {isSel && <div className="absolute inset-0 bg-sky-400/20 flex items-center justify-center rounded-full"><Check size={14} className="text-white drop-shadow-md" strokeWidth={4} /></div>}
-                                        </div>
-                                        <span className={`text-[8px] font-bold truncate w-full text-center ${isSel ? 'text-sky-400' : 'text-slate-500'}`}>{m.name}</span>
-                                    </button>
+                                    <div key={m.id} className={`flex items-center gap-3 p-2 rounded-xl border transition-all ${isSel ? 'bg-white border-sky-100 shadow-sm' : 'bg-slate-50/50 border-transparent opacity-40 grayscale'}`}>
+                                        <button onClick={() => {
+                                            if (isSel) { if (selectedSplits.length > 1) setSelectedSplits(selectedSplits.filter(s => s !== m.id)); } 
+                                            else setSelectedSplits([...selectedSplits, m.id]);
+                                        }} className="flex items-center gap-2 flex-1 min-w-0">
+                                            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center p-0.5 relative ${isSel ? 'border-sky-400 shadow-active' : 'border-white shadow-xs'}`}>
+                                                <img src={m.avatar} className="w-full h-full rounded-full object-cover" />
+                                                {isSel && <div className="absolute inset-0 bg-sky-400/20 flex items-center justify-center rounded-full"><Check size={14} className="text-white drop-shadow-md" strokeWidth={4} /></div>}
+                                            </div>
+                                            <span className={`text-xs font-bold truncate ${isSel ? 'text-sky-500' : 'text-slate-500'}`}>{m.name}</span>
+                                        </button>
+                                        
+                                        {isSel && isCustomSplit && (
+                                            <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                                                <span className="text-[9px] font-black text-slate-300">{inputCurrency}</span>
+                                                <input 
+                                                    type="number" 
+                                                    value={customSplits[m.id] || ''} 
+                                                    onChange={(e) => setCustomSplits({...customSplits, [m.id]: e.target.value})}
+                                                    className="w-20 text-right text-xs font-black text-slate-700 bg-transparent outline-none" 
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        )}
+                                        {isSel && !isCustomSplit && (
+                                            <div className="text-[10px] font-black text-slate-300 px-3 italic shrink-0">
+                                                ~ {inputCurrency} {amountInput ? (parseFloat(amountInput) / selectedSplits.length).toFixed(0) : 0}
+                                            </div>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </div>

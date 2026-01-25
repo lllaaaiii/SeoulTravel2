@@ -18,7 +18,8 @@ export enum EventCategory {
   FOOD = '美食',
   TRANSPORT = '交通',
   STAY = '住宿',
-  SHOPPING = '購物'
+  SHOPPING = '購物',
+  STAR = '追星'
 }
 
 export interface ScheduleEvent {
@@ -27,7 +28,7 @@ export interface ScheduleEvent {
   time: string; // HH:MM
   title: string;
   location: string;
-  category: EventCategory;
+  category: string; // 改為 string 以支援自定義分類
   notes?: string;
   mapLink?: string;
   createdAt?: string;
@@ -47,11 +48,12 @@ export interface Expense {
   currency: 'KRW' | 'TWD'; // Track original input currency
   category: string;
   description: string;
-  notes?: string; // 新增備註
+  notes?: string;
   payerId: string;
   splitWithIds: string[]; // IDs of members involved
+  customSplits?: Record<string, number>; // 新增：按金額拆分，Key 為 Member ID
   date: string;
-  time: string; // 新增時間欄位
+  time: string;
   timestamp?: string;
 }
 
