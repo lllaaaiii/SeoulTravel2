@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ScheduleEvent, EventCategory, PreTripTask, Member } from '../types';
 import { CATEGORY_COLORS, CATEGORY_ICONS } from '../constants';
-import { MapPin, Info, Plus, X, Check, Trash2, Plane, ChevronDown } from 'lucide-react';
+import { MapPin, Info, Plus, X, Check, Trash2, Plane, ChevronDown, Clock } from 'lucide-react';
 import { db } from '../services/firebase';
 import { collection, query, onSnapshot, addDoc, deleteDoc, updateDoc, doc, arrayUnion, arrayRemove, orderBy, getDoc, setDoc } from 'firebase/firestore';
 
@@ -37,6 +37,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState<string>(EventCategory.SIGHTSEEING);
   const [newNotes, setNewNotes] = useState('');
+  const [newTime, setNewTime] = useState(''); // 新增時間狀態
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   // 獲取自定義分類
@@ -52,7 +53,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
     fetchConfig();
   }, []);
 
-  const handleAddNewCategory = async () => {
+  const handleAddNewCategory = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!newCatName.trim()) return;
     const updated = { ...customCategories, [newCatName.trim()]: newCatEmoji };
     setCustomCategories(updated);
@@ -103,11 +105,16 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
     if (!newLocation) return;
     try {
       if (editingId) {
-        await updateDoc(doc(db, 'events', editingId), { location: newLocation, category: newCategory, notes: newNotes });
+        await updateDoc(doc(db, 'events', editingId), { 
+          location: newLocation, 
+          category: newCategory, 
+          notes: newNotes,
+          time: newTime // 儲存時間
+        });
       } else {
         await addDoc(collection(db, 'events'), { 
           date: selectedDate, 
-          time: '', 
+          time: newTime, // 儲存時間
           title: '', 
           location: newLocation, 
           category: newCategory, 
@@ -132,15 +139,38 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
     }
   }
 
+  const openEditModal = (event: ScheduleEvent) => {
+    setEditingId(event.id);
+    setNewLocation(event.location);
+    setNewCategory(event.category);
+    setNewNotes(event.notes || '');
+    setNewTime(event.time || ''); // 載入時間
+    setIsModalOpen(true);
+  };
+
+  const openAddModal = () => {
+    setEditingId(null);
+    setNewLocation('');
+    setNewNotes('');
+    setNewTime(''); // 重設時間
+    setIsModalOpen(true);
+  };
+
   const allCategoryIcons = { ...CATEGORY_ICONS, ...customCategories };
   const allCategoryColors = { ...CATEGORY_COLORS };
 
   const getCategoryIcon = (cat: string) => (allCategoryIcons as any)[cat] || '📍';
   const getCategoryColorClass = (cat: string) => (allCategoryColors as any)[cat] || 'bg-slate-50 text-slate-400 border-slate-100';
 
+  // 排序邏輯：優先按時間排序，沒有時間的排在後面
   const filteredEvents = events
     .filter(e => e.date === selectedDate)
-    .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')); 
+    .sort((a, b) => {
+      if (a.time && b.time) return a.time.localeCompare(b.time);
+      if (a.time) return -1;
+      if (b.time) return 1;
+      return (a.createdAt || '').localeCompare(b.createdAt || '');
+    });
 
   return (
     <div className="h-full flex flex-col">
@@ -283,7 +313,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
             )}
 
             <button 
-                onClick={() => { setEditingId(null); setNewLocation(''); setNewNotes(''); setIsModalOpen(true); }}
+                onClick={openAddModal}
                 className="w-full bg-sky-400 text-brand-100 font-black py-4 rounded-2xl shadow-active flex items-center justify-center space-x-2 active:scale-[0.98] transition-all mb-4 border border-sky-500/20"
             >
               <div className="w-5 h-5 rounded-full bg-brand-100 flex items-center justify-center shadow-soft">
@@ -296,19 +326,27 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
             {filteredEvents.map((event) => (
                 <div 
                     key={event.id}
-                    onClick={() => { setEditingId(event.id); setNewLocation(event.location); setNewCategory(event.category); setNewNotes(event.notes || ''); setIsModalOpen(true); }}
+                    onClick={() => openEditModal(event)}
                     className="bg-white rounded-[20px] p-4 shadow-soft border border-slate-50 active:scale-[0.98] transition-all relative group"
                 >
                     <div className="flex justify-between items-start mb-2">
-                        <div className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${getCategoryColorClass(event.category).replace('text-sky-400', 'text-sky-400')}`}>
-                            {getCategoryIcon(event.category)} {event.category}
+                        <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${getCategoryColorClass(event.category).replace('text-sky-400', 'text-sky-400')}`}>
+                            <span>{getCategoryIcon(event.category)}</span>
+                            <span>{event.category}</span>
                         </div>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
-                          className="text-slate-100 hover:text-rose-400 transition-colors p-1"
-                        >
-                            <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-3">
+                          {event.time && (
+                            <div className="flex items-center gap-1 text-[10px] font-black text-sky-400 uppercase tracking-tighter">
+                              <Clock size={10} strokeWidth={3} /> {event.time}
+                            </div>
+                          )}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
+                            className="text-slate-100 hover:text-rose-400 transition-colors p-1"
+                          >
+                              <Trash2 size={14} />
+                          </button>
+                        </div>
                     </div>
                     <h3 className="text-base font-bold text-slate-700 mb-1 leading-snug">{event.location}</h3>
                     {event.notes && <p className="text-[11px] text-slate-400 italic font-medium truncate">{event.notes}</p>}
@@ -331,29 +369,41 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                  <div>
+                    <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1 mb-1">目的地名稱</label>
                     <input type="text" placeholder="目的地名稱" value={newLocation} onChange={e => setNewLocation(e.target.value)} className="w-full text-lg font-bold py-3 border-b-2 border-slate-50 focus:border-sky-400 outline-none transition-colors" required />
                  </div>
                  
-                 <div className="space-y-2">
-                    <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">行程分類</label>
-                    <div className="relative">
-                        <select 
-                            value={newCategory} 
-                            onChange={(e) => {
-                                if (e.target.value === 'ADD_NEW') { setIsAddingCategory(true); } 
-                                else { setNewCategory(e.target.value); setIsAddingCategory(false); }
-                            }}
-                            className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold text-slate-700 border-none outline-none appearance-none pr-10 focus:ring-1 focus:ring-sky-100"
-                        >
-                            {Object.entries(CATEGORY_ICONS).map(([name, emoji]) => (
-                                <option key={name} value={name}>{emoji} {name}</option>
-                            ))}
-                            {Object.entries(customCategories).map(([name, emoji]) => (
-                                <option key={name} value={name}>{emoji} {name}</option>
-                            ))}
-                            <option value="ADD_NEW" className="text-sky-400 font-bold">+ 新增自定義分類...</option>
-                        </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
+                 <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                        <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">時間 (可選)</label>
+                        <input 
+                            type="time" 
+                            value={newTime} 
+                            onChange={e => setNewTime(e.target.value)} 
+                            className="w-full p-3 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none focus:ring-1 focus:ring-sky-100" 
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">行程分類</label>
+                        <div className="relative">
+                            <select 
+                                value={newCategory} 
+                                onChange={(e) => {
+                                    if (e.target.value === 'ADD_NEW') { setIsAddingCategory(true); } 
+                                    else { setNewCategory(e.target.value); setIsAddingCategory(false); }
+                                }}
+                                className="w-full p-3 bg-slate-50 rounded-2xl text-sm font-bold text-slate-700 border-none outline-none appearance-none pr-8 focus:ring-1 focus:ring-sky-100"
+                            >
+                                {Object.entries(CATEGORY_ICONS).map(([name, emoji]) => (
+                                    <option key={name} value={name}>{emoji} {name}</option>
+                                ))}
+                                {Object.entries(customCategories).map(([name, emoji]) => (
+                                    <option key={name} value={name}>{emoji} {name}</option>
+                                ))}
+                                <option value="ADD_NEW" className="text-sky-400 font-bold">+ 新增分類...</option>
+                            </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
+                        </div>
                     </div>
                  </div>
 
@@ -376,7 +426,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
                     </div>
                  )}
 
-                 <textarea placeholder="有些備註想記錄嗎？" value={newNotes} onChange={e => setNewNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl h-24 outline-none focus:ring-1 focus:ring-sky-200 text-xs font-bold text-slate-600" />
+                 <div className="space-y-1">
+                    <label className="text-[8px] font-black text-slate-300 uppercase tracking-widest block ml-1">備註 (可選)</label>
+                    <textarea placeholder="有些備註想記錄嗎？" value={newNotes} onChange={e => setNewNotes(e.target.value)} className="w-full p-4 bg-slate-50 rounded-xl h-24 outline-none focus:ring-1 focus:ring-sky-200 text-xs font-bold text-slate-600" />
+                 </div>
                  
                  <div className="flex gap-3 pt-4">
                      {editingId && (
