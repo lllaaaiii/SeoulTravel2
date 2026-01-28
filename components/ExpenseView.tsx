@@ -13,8 +13,10 @@ interface ExpenseViewProps {
 export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   const [activeSubTab, setActiveSubTab] = useState<'list' | 'settle'>('list');
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [exchangeRate, setExchangeRate] = useState<number>(0.0245);
   
+  const [exchangeRate, setExchangeRate] = useState<number>(0.0245);
+  const [localRateStr, setLocalRateStr] = useState<string>('0.0245');
+
   const [viewingMemberDetailsId, setViewingMemberDetailsId] = useState<string | null>(null);
 
   const [customCategories, setCustomCategories] = useState<Record<string, string>>({});
@@ -42,23 +44,35 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
     return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   };
 
+  // Sync settings with Firestore real-time
   useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const configDoc = await getDoc(doc(db, 'config', 'settings'));
-        if (configDoc.exists()) {
-          if (configDoc.data().exchangeRate) setExchangeRate(configDoc.data().exchangeRate);
-          if (configDoc.data().customCategories) setCustomCategories(configDoc.data().customCategories);
+    const unsubscribe = onSnapshot(doc(db, 'config', 'settings'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.exchangeRate !== undefined) {
+          setExchangeRate(data.exchangeRate);
+          // Only update the input string if the value is significantly different
+          // This prevents overwriting user input like "0." or "0.00" while typing
+          setLocalRateStr(prev => {
+             const currentNum = parseFloat(prev);
+             if (!isNaN(currentNum) && Math.abs(currentNum - data.exchangeRate) < 0.000001) return prev;
+             return data.exchangeRate.toString();
+          });
         }
-      } catch (e) { console.warn("Fetch settings error:", e); }
-    };
-    fetchConfig();
+        if (data.customCategories) setCustomCategories(data.customCategories);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleRateChange = async (newVal: string) => {
+    setLocalRateStr(newVal);
     const rate = parseFloat(newVal);
-    setExchangeRate(rate || 0);
-    if (rate > 0) await setDoc(doc(db, 'config', 'settings'), { exchangeRate: rate }, { merge: true });
+    if (!isNaN(rate)) {
+        setExchangeRate(rate);
+        // Persist to Firestore
+        await setDoc(doc(db, 'config', 'settings'), { exchangeRate: rate }, { merge: true });
+    }
   };
 
   useEffect(() => {
@@ -146,7 +160,9 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
     
     expenses.forEach(exp => {
         const currentTWD = exp.currency === 'KRW' ? Math.round(exp.amountKRW * exchangeRate) : exp.amountTWD;
-        memberPaid[exp.payerId] += currentTWD;
+        if (memberPaid[exp.payerId] !== undefined) {
+           memberPaid[exp.payerId] += currentTWD;
+        }
         
         if (exp.customSplits && Object.keys(exp.customSplits).length > 0) {
           (Object.entries(exp.customSplits) as [string, number][]).forEach(([id, amt]) => {
@@ -156,10 +172,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
             }
           });
         } else {
-          const splitCount = exp.splitWithIds.length;
+          const splitIds = exp.splitWithIds || [];
+          const splitCount = splitIds.length;
           if (splitCount > 0) {
               const share = currentTWD / splitCount;
-              exp.splitWithIds.forEach(id => { if (memberShare[id] !== undefined) { memberShare[id] += share; } });
+              splitIds.forEach(id => { if (memberShare[id] !== undefined) { memberShare[id] += share; } });
           }
         }
     });
@@ -190,7 +207,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
   const viewingMember = members.find(m => m.id === viewingMemberDetailsId);
   const groupedMemberExpenses: Record<string, Expense[]> = {};
   if (viewingMember) {
-    expenses.filter(e => e.splitWithIds.includes(viewingMember.id)).forEach(exp => {
+    expenses.filter(e => (e.splitWithIds || []).includes(viewingMember.id)).forEach(exp => {
         if (!groupedMemberExpenses[exp.date]) groupedMemberExpenses[exp.date] = [];
         groupedMemberExpenses[exp.date].push(exp);
     });
@@ -209,7 +226,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
     setEditingId(exp.id); setInputCurrency(exp.currency || 'KRW');
     setAmountInput(exp.currency === 'KRW' ? exp.amountKRW.toString() : exp.amountTWD.toString());
     setDescription(exp.description); setNotes(exp.notes || ''); setCategory(exp.category); setPayer(exp.payerId);
-    setSelectedSplits(exp.splitWithIds); setNewDate(exp.date); setNewTime(exp.time || '00:00');
+    setSelectedSplits(exp.splitWithIds || []); setNewDate(exp.date); setNewTime(exp.time || '00:00');
     setIsAddingCategory(false);
     if (exp.customSplits) {
       setIsCustomSplit(true);
@@ -245,7 +262,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                     {expensesByDate[date].map(exp => {
                       const payerM = members.find(m => m.id === exp.payerId);
                       const currentTWD = exp.currency === 'KRW' ? Math.round(exp.amountKRW * exchangeRate) : exp.amountTWD;
-                      const splitMembers = members.filter(m => exp.splitWithIds.includes(m.id));
+                      const splitMembers = members.filter(m => (exp.splitWithIds || []).includes(m.id));
                       return (
                           <div key={exp.id} onClick={() => openEditModal(exp)} className="bg-white py-5 px-5 rounded-2xl shadow-soft border border-slate-50 flex flex-col gap-4 cursor-pointer active:scale-[0.98] transition-all relative">
                           <div className="flex justify-between items-start">
@@ -263,8 +280,8 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                                   <div className="flex items-center justify-end gap-1 text-[9px] font-black text-slate-300 uppercase mb-1.5">
                                     <Clock size={9} /> {exp.time || '--:--'}
                                   </div>
-                                  <div className="text-base font-black text-slate-900 tracking-tight leading-none mb-1">₩{exp.amountKRW.toLocaleString()}</div>
-                                  <div className="text-[11px] font-black text-sky-400 uppercase tracking-tighter leading-none">NT$ {currentTWD.toLocaleString()}</div>
+                                  <div className="text-base font-black text-slate-900 tracking-tight leading-none mb-1">NT$ {currentTWD.toLocaleString()}</div>
+                                  <div className="text-[11px] font-black text-sky-400 uppercase tracking-tighter leading-none">₩{exp.amountKRW.toLocaleString()}</div>
                               </div>
                           </div>
                           {exp.notes && (
@@ -278,7 +295,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                                       <img key={sm.id} src={sm.avatar} className="h-6 w-6 rounded-full ring-2 ring-white shadow-sm bg-white object-cover" alt={sm.name} />
                                   ))}
                               </div>
-                              <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest pl-2 italic shrink-0">{exp.splitWithIds.length} 參與者</span>
+                              <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest pl-2 italic shrink-0">{(exp.splitWithIds || []).length} 參與者</span>
                           </div>
                           </div>
                       );
@@ -304,7 +321,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                 <div className="flex items-center gap-2">
                    <div className="text-slate-600 text-[10px] font-black leading-none uppercase shrink-0">1 KRW ≈</div>
                    <div className="flex-1 min-w-0 bg-white border border-sky-400/20 rounded-xl px-2 h-12 flex items-center shadow-sm">
-                      <input type="number" step="0.0001" value={exchangeRate} onChange={(e) => handleRateChange(e.target.value)} className="w-full text-center text-sky-500 text-lg font-black bg-transparent outline-none" />
+                      <input type="number" step="0.0001" value={localRateStr} onChange={(e) => handleRateChange(e.target.value)} className="w-full text-center text-sky-500 text-lg font-black bg-transparent outline-none" />
                    </div>
                    <div className="text-slate-600 text-[10px] font-black leading-none uppercase shrink-0">TWD</div>
                 </div>
@@ -395,11 +412,12 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                          <div className="space-y-2.5">
                             {groupedMemberExpenses[date].map(exp => {
                               const currentTWD = exp.currency === 'KRW' ? Math.round(exp.amountKRW * exchangeRate) : exp.amountTWD;
+                              const splitIds = exp.splitWithIds || [];
                               let individualShareTWD = 0;
                               if (exp.customSplits && exp.customSplits[viewingMember.id] !== undefined) {
                                 individualShareTWD = exp.currency === 'KRW' ? Math.round(exp.customSplits[viewingMember.id] * exchangeRate) : Math.round(exp.customSplits[viewingMember.id]);
                               } else {
-                                individualShareTWD = Math.round(currentTWD / exp.splitWithIds.length);
+                                individualShareTWD = splitIds.length > 0 ? Math.round(currentTWD / splitIds.length) : 0;
                               }
                               return (
                                 <div key={exp.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col shadow-xs gap-3">
@@ -409,7 +427,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                                       <div className="min-w-0">
                                         <div className="text-sm font-bold text-slate-700 truncate">{exp.description}</div>
                                         <div className="text-[10px] text-slate-300 font-bold uppercase flex items-center gap-1">
-                                            <Users size={10}/> {exp.splitWithIds.length} 人分擔 {exp.customSplits && "· 自定義"}
+                                            <Users size={10}/> {splitIds.length} 人分擔 {exp.customSplits && "· 自定義"}
                                         </div>
                                       </div>
                                     </div>

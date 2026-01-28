@@ -22,7 +22,22 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
     { display: '7', val: '2026-02-05', date: '2/05' },
   ];
 
-  const [selectedDate, setSelectedDate] = useState(dates[1].val);
+  // 初始化日期邏輯：如果是 1/30 前顯示行前準備，旅程期間顯示當天，否則顯示第一天
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+
+    if (today < '2026-01-30') return 'PRE_TRIP';
+    
+    const validDates = ['2026-01-30', '2026-01-31', '2026-02-01', '2026-02-02', '2026-02-03', '2026-02-04', '2026-02-05'];
+    if (validDates.includes(today)) return today;
+    
+    return '2026-01-30';
+  });
+
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [preTripTasks, setPreTripTasks] = useState<PreTripTask[]>([]);
   
@@ -37,7 +52,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
   const [newLocation, setNewLocation] = useState('');
   const [newCategory, setNewCategory] = useState<string>(EventCategory.SIGHTSEEING);
   const [newNotes, setNewNotes] = useState('');
-  const [newTime, setNewTime] = useState(''); // 新增時間狀態
+  const [newTime, setNewTime] = useState(''); 
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
   // 獲取自定義分類
@@ -109,12 +124,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
           location: newLocation, 
           category: newCategory, 
           notes: newNotes,
-          time: newTime // 儲存時間
+          time: newTime
         });
       } else {
         await addDoc(collection(db, 'events'), { 
           date: selectedDate, 
-          time: newTime, // 儲存時間
+          time: newTime,
           title: '', 
           location: newLocation, 
           category: newCategory, 
@@ -144,7 +159,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
     setNewLocation(event.location);
     setNewCategory(event.category);
     setNewNotes(event.notes || '');
-    setNewTime(event.time || ''); // 載入時間
+    setNewTime(event.time || '');
     setIsModalOpen(true);
   };
 
@@ -152,7 +167,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
     setEditingId(null);
     setNewLocation('');
     setNewNotes('');
-    setNewTime(''); // 重設時間
+    setNewTime('');
     setIsModalOpen(true);
   };
 
@@ -162,7 +177,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
   const getCategoryIcon = (cat: string) => (allCategoryIcons as any)[cat] || '📍';
   const getCategoryColorClass = (cat: string) => (allCategoryColors as any)[cat] || 'bg-slate-50 text-slate-400 border-slate-100';
 
-  // 排序邏輯：優先按時間排序，沒有時間的排在後面
   const filteredEvents = events
     .filter(e => e.date === selectedDate)
     .sort((a, b) => {
@@ -256,7 +270,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
              </div>
         ) : (
         <>
-            {/* 去程航班 */}
             {selectedDate === '2026-01-30' && (
               <div className="bg-white rounded-[24px] border-2 border-dashed border-sky-400/20 p-4 shadow-soft relative overflow-hidden mb-4">
                 <div className="flex justify-between items-center mb-4">
@@ -284,7 +297,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
               </div>
             )}
 
-            {/* 回程航班 */}
             {selectedDate === '2026-02-05' && (
               <div className="bg-white rounded-[24px] border-2 border-dashed border-sky-400/20 p-4 shadow-soft relative overflow-hidden mb-4">
                 <div className="flex justify-between items-center mb-4">

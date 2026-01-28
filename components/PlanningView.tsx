@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { TodoItem, Member } from '../types';
 import { Check, Plus, ShoppingBag, Trash2 } from 'lucide-react';
@@ -99,20 +100,20 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ members }) => {
              </button>
         </form>
 
-        <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
+        <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar pb-24">
           {filteredTodos.map(item => (
             <div 
               key={item.id} 
               onClick={() => toggleTodo(item.id, item.completed)}
-              className={`flex items-center p-3 rounded-xl cursor-pointer transition-all active:scale-95 ${item.completed ? 'bg-slate-50/50 opacity-50' : 'bg-slate-50 border border-slate-100'}`}
+              className={`flex items-start p-3 rounded-xl cursor-pointer transition-all active:scale-95 ${item.completed ? 'bg-slate-50/50 opacity-50' : 'bg-slate-50 border border-slate-100'}`}
             >
-              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center mr-3 transition-all ${item.completed ? 'bg-sky-400 border-sky-400' : 'border-slate-300 bg-white'}`}>
+              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center mr-3 mt-0.5 shrink-0 transition-all ${item.completed ? 'bg-sky-400 border-sky-400' : 'border-slate-300 bg-white'}`}>
                 {item.completed && <Check size={12} className="text-white" strokeWidth={4} />}
               </div>
-              <span className={`text-xs font-bold flex-1 ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{item.text}</span>
+              <span className={`text-xs font-bold flex-1 min-w-0 break-all whitespace-pre-wrap leading-normal ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{item.text}</span>
               <button 
                 onClick={(e) => { e.stopPropagation(); if(window.confirm("確定刪除此清單項目？")) deleteDoc(doc(db, 'todos', item.id)); }} 
-                className="text-slate-200 ml-1.5 p-1 hover:text-rose-400 transition-colors"
+                className="text-slate-200 ml-1.5 p-1 hover:text-rose-400 transition-colors shrink-0"
               >
                 <Trash2 size={14} />
               </button>
