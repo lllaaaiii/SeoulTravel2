@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ScheduleEvent, EventCategory, PreTripTask, Member } from '../types';
 import { CATEGORY_COLORS, CATEGORY_ICONS } from '../constants';
 import { MapPin, Info, Plus, X, Check, Trash2, Plane, ChevronDown, Clock } from 'lucide-react';
@@ -54,6 +54,56 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
   const [newNotes, setNewNotes] = useState('');
   const [newTime, setNewTime] = useState(''); 
   const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  // Swipe gesture state
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
+  const minSwipeDistance = 50;
+
+  // Auto-scroll date tab
+  useEffect(() => {
+    const el = document.getElementById(`date-tab-${selectedDate}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [selectedDate]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const xDistance = touchStart.x - touchEnd.x;
+    const yDistance = touchStart.y - touchEnd.y;
+
+    // Ignore vertical scrolls
+    if (Math.abs(yDistance) >= Math.abs(xDistance)) return;
+
+    const isLeftSwipe = xDistance > minSwipeDistance;
+    const isRightSwipe = xDistance < -minSwipeDistance;
+    
+    const currentIndex = dates.findIndex(d => d.val === selectedDate);
+
+    if (isLeftSwipe) {
+      // Go to Next Day
+      if (currentIndex < dates.length - 1) {
+        setSelectedDate(dates[currentIndex + 1].val);
+      }
+    }
+
+    if (isRightSwipe) {
+      // Go to Previous Day
+      if (currentIndex > 0) {
+        setSelectedDate(dates[currentIndex - 1].val);
+      }
+    }
+  };
 
   // 獲取自定義分類
   useEffect(() => {
@@ -192,6 +242,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
         {dates.map((d) => (
           <button
             key={d.val}
+            id={`date-tab-${d.val}`}
             onClick={() => setSelectedDate(d.val)}
             className={`flex-shrink-0 flex flex-col items-center justify-center w-[48px] h-[64px] rounded-xl transition-all duration-300 ${
               selectedDate === d.val
@@ -215,7 +266,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ members }) => {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-24 space-y-4 no-scrollbar pt-2">
+      <div 
+        className="flex-1 overflow-y-auto px-6 pb-24 space-y-4 no-scrollbar pt-2"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {selectedDate === 'PRE_TRIP' ? (
              <div className="space-y-3">
                  <div className="bg-white p-5 rounded-3xl shadow-soft border border-slate-50">
