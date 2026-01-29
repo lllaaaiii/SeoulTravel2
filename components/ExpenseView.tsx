@@ -75,6 +75,22 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
     }
   };
 
+  // 新增分類的處理函式
+  const handleAddNewCategory = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const updated = { ...customCategories, [newCatName.trim()]: newCatEmoji };
+    setCustomCategories(updated); // Optimistic update
+    setIsAddingCategory(false);
+    
+    // 寫入資料庫
+    await setDoc(doc(db, 'config', 'settings'), { customCategories: updated }, { merge: true });
+    
+    // 選中新建立的分類
+    setCategory(newCatName.trim());
+    setNewCatName('');
+  };
+
   useEffect(() => {
     if (members.length > 0 && !payer) {
       setPayer(members[0].id);
@@ -476,6 +492,24 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({ members }) => {
                             </select>
                             <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
                         </div>
+                        {isAddingCategory && (
+                          <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 space-y-3 animate-in fade-in zoom-in-95 duration-200 mt-2">
+                              <div className="flex gap-2">
+                                  <div className="flex-1">
+                                      <label className="text-[8px] font-bold text-purple-400 mb-1 block">分類名稱</label>
+                                      <input type="text" placeholder="例: 零食" value={newCatName} onChange={e => setNewCatName(e.target.value)} className="w-full p-2 bg-white rounded-lg text-xs font-bold outline-none border border-purple-100 focus:border-purple-300" />
+                                  </div>
+                                  <div className="w-12">
+                                      <label className="text-[8px] font-bold text-purple-400 mb-1 block">圖示</label>
+                                      <input type="text" placeholder="🍪" value={newCatEmoji} onChange={e => setNewCatEmoji(e.target.value)} className="w-full p-2 bg-white rounded-lg text-center text-xs outline-none border border-purple-100" />
+                                  </div>
+                              </div>
+                              <div className="flex gap-2">
+                                  <button onClick={() => setIsAddingCategory(false)} className="flex-1 py-1.5 bg-white text-slate-400 text-[10px] font-bold rounded-lg border border-slate-100">取消</button>
+                                  <button onClick={handleAddNewCategory} className="flex-1 py-1.5 bg-sky-400 text-white text-[10px] font-bold rounded-lg shadow-sm">新增分類</button>
+                              </div>
+                          </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
